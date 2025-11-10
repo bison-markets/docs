@@ -1,0 +1,20 @@
+/* GET */
+.mintlify-http-method-get {
+  background-color: #0ea5e9 !important;
+  color: #fff !important;
+}
+/* POST */
+.mintlify-http-method-post {
+  background-color: #8b5cf6 !important;
+  color: #fff !important;
+}
+/* PUT */
+.mintlify-http-method-put {
+  background-color: #f59e0b !important;
+  color: #111827 !important;
+}
+/* DELETE */
+.mintlify-http-method-delete {
+  background-color: #ef4444 !important;
+  color: #fff !important;
+}
