@@ -19,8 +19,7 @@ async executeDepositFlow(params: {
   walletClient: WalletClient;
   publicClient: PublicClient;
   userAddress: `0x${string}`;
-  vaultAddress: `0x${string}`;
-  usdcAddress: `0x${string}`;
+  chain: 'base';
   amountUusdc: number;
 }): Promise<`0x${string}`>
 ```
@@ -39,12 +38,8 @@ async executeDepositFlow(params: {
   User's Ethereum address
 </ParamField>
 
-<ParamField path="vaultAddress" type="string" required>
-  Address of the Bison vault contract
-</ParamField>
-
-<ParamField path="usdcAddress" type="string" required>
-  Address of the USDC token contract
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported). Vault and USDC addresses are automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="amountUusdc" type="number" required>
@@ -81,8 +76,7 @@ const txHash = await client.executeDepositFlow({
   walletClient,
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
-  usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base USDC
+  chain: 'base',
   amountUusdc: 100_000_000, // 100 USDC
 });
 
@@ -101,8 +95,7 @@ async executeWithdrawFlow(params: {
   walletClient: WalletClient;
   publicClient: PublicClient;
   userAddress: `0x${string}`;
-  chain: string;
-  vaultAddress: `0x${string}`;
+  chain: 'base';
   amountUusdc: number;
 }): Promise<`0x${string}`>
 ```
@@ -122,11 +115,7 @@ async executeWithdrawFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
-</ParamField>
-
-<ParamField path="vaultAddress" type="string" required>
-  Address of the Bison vault contract
+  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="amountUusdc" type="number" required>
@@ -146,7 +135,6 @@ const txHash = await client.executeWithdrawFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   amountUusdc: 50_000_000, // 50 USDC
 });
 
@@ -243,8 +231,7 @@ try {
     walletClient,
     publicClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-    vaultAddress: '0x1234567890123456789012345678901234567890',
-    usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    chain: 'base',
     amountUusdc: 1_000_000_000, // 1000 USDC
   });
   console.log('Success:', txHash);
@@ -276,7 +263,6 @@ try {
     publicClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     chain: 'base',
-    vaultAddress: '0x1234567890123456789012345678901234567890',
     amountUusdc: 50_000_000, // 50 USDC
   });
   console.log('Withdrawn:', txHash);
@@ -308,5 +294,6 @@ try {
 - After deposits/withdrawals, balances update automatically via blockchain events
 - The SDK handles USDC approval automatically for deposits
 - All amounts are in µUSDC (6 decimal places: 1 USDC = 1_000_000 µUSDC)
+- Vault and USDC addresses are automatically fetched from the `/info` endpoint and cached per client instance
 - Transaction confirmation can take 2-5 seconds on Base network
 

@@ -24,7 +24,6 @@ async executeBuyFlow(params: {
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: string;
-  vaultAddress: `0x${string}`;
   marketId: string;
   side: 'yes' | 'no';
   number: number;
@@ -49,11 +48,7 @@ async executeBuyFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
-</ParamField>
-
-<ParamField path="vaultAddress" type="string" required>
-  Address of the Bison vault contract
+  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="marketId" type="string" required>
@@ -113,7 +108,6 @@ const result = await client.executeBuyFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
   number: 10,
@@ -144,7 +138,6 @@ async executeSellFlow(params: {
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: string;
-  vaultAddress: `0x${string}`;
   marketId: string;
   side: 'yes' | 'no';
   number: number;
@@ -163,7 +156,6 @@ const result = await client.executeSellFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'no',
   number: 5,
@@ -182,7 +174,6 @@ async executeCancelOrderFlow(params: {
   walletClient: WalletClient;
   userAddress: `0x${string}`;
   chain: string;
-  vaultAddress: `0x${string}`;
   orderId: string;
 }): Promise<void>
 ```
@@ -198,11 +189,7 @@ async executeCancelOrderFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
-</ParamField>
-
-<ParamField path="vaultAddress" type="string" required>
-  Address of the Bison vault contract
+  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="orderId" type="string" required>
@@ -216,7 +203,6 @@ await client.executeCancelOrderFlow({
   walletClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   orderId: 'abc123-order-id',
 });
 
@@ -237,7 +223,6 @@ async executeMintFlow(params: {
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: string;
-  vaultAddress: `0x${string}`;
   marketId: string;
   side: 'yes' | 'no';
   number: number;
@@ -253,7 +238,6 @@ const result = await client.executeMintFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
   number: 20,
@@ -272,7 +256,6 @@ async executeBurnFlow(params: {
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: string;
-  vaultAddress: `0x${string}`;
   marketId: string;
   side: 'yes' | 'no';
   number: number;
@@ -288,7 +271,6 @@ const result = await client.executeBurnFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  vaultAddress: '0x1234567890123456789012345678901234567890',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'no',
   number: 15,
@@ -354,13 +336,13 @@ Get token addresses and balances for position tokens.
 ```typescript
 async getPositionTokenAddress(params: {
   publicClient: PublicClient;
-  vaultAddress: `0x${string}`;
+  chain: 'base';
   marketId: string;
   side: 'yes' | 'no';
 }): Promise<`0x${string}` | null>
 ```
 
-Returns the ERC20 token address for a position, or `null` if not yet created.
+Returns the ERC20 token address for a position, or `null` if not yet created. The vault address is automatically resolved from the `/info` endpoint.
 
 ### `getTokenBalance`
 
@@ -392,7 +374,7 @@ Prompts the user to add a position token to their wallet (MetaMask, etc.).
 // Get token address
 const tokenAddress = await client.getPositionTokenAddress({
   publicClient,
-  vaultAddress: '0x1234567890123456789012345678901234567890',
+  chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
 });
@@ -429,7 +411,6 @@ try {
     publicClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     chain: 'base',
-    vaultAddress: '0x1234567890123456789012345678901234567890',
     marketId: 'KXFEDDECISION-26JAN-T425',
     side: 'yes',
     number: 10,

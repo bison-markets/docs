@@ -145,12 +145,14 @@ const info = await client.getInfo();
 console.log('Bison API Version:', info.version);
 console.log('Supported chains:', info.chains);
 
-// Get contract addresses for a specific chain
+// Contract addresses are available if needed
 const baseConfig = info.chains.base;
 console.log('Base configuration:');
-console.log('  Vault address:', baseConfig.vaultAddress);
-console.log('  USDC address:', baseConfig.usdcAddress);
 console.log('  Chain ID:', baseConfig.chainId);
+console.log('  RPC URL:', baseConfig.rpcUrl);
+
+// Note: The SDK automatically resolves vault and USDC addresses 
+// for all trading/deposit functions, so you typically don't need to access them directly
 ```
 
 ## Complete Market Workflow Example
@@ -164,11 +166,7 @@ const client = createBisonClient({
   baseUrl: 'https://api.bison.markets/v1' 
 });
 
-// 1. Get system info to find contract addresses
-const info = await client.getInfo();
-const vaultAddress = info.chains.base.vaultAddress;
-
-// 2. Get event information
+// 1. Get event information
 const event = await client.getEvent('KXFEDDECISION-26JAN');
 console.log(`Found ${event.markets.length} markets in event`);
 
