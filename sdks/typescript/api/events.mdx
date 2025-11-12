@@ -1,0 +1,320 @@
+---
+title: "Events"
+description: "Real-time event streaming with WebSockets"
+---
+
+## Overview
+
+The SDK provides two WebSocket-based event streaming methods:
+
+- `listen` - Subscribe to user-specific events (orders, positions, deposits, withdrawals)
+- `listenToKalshiEvent` - Subscribe to market ticker updates for a specific Kalshi event
+
+Both methods support automatic reconnection with exponential backoff.
+
+## User Events
+
+Subscribe to events for a specific user address.
+
+### `listen`
+
+```typescript
+listen(
+  userAddress: string,
+  onEvent: (event: BisonEvent) => void,
+  options?: {
+    onError?: (error: Error) => void;
+    onConnect?: () => void;
+    onDisconnect?: () => void;
+    reconnect?: boolean;
+  }
+): () => void
+```
+
+#### Parameters
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address to listen for events
+</ParamField>
+
+<ParamField path="onEvent" type="function" required>
+  Callback function that receives events as they occur
+</ParamField>
+
+<ParamField path="options.onError" type="function">
+  Optional callback for handling WebSocket errors
+</ParamField>
+
+<ParamField path="options.onConnect" type="function">
+  Optional callback invoked when WebSocket connection is established
+</ParamField>
+
+<ParamField path="options.onDisconnect" type="function">
+  Optional callback invoked when WebSocket connection closes
+</ParamField>
+
+<ParamField path="options.reconnect" type="boolean">
+  Enable automatic reconnection (default: `true`). Uses exponential backoff with max 5 attempts.
+</ParamField>
+
+#### Returns
+
+A disconnect function to stop listening and close the WebSocket connection.
+
+#### Event Types
+
+The callback receives one of the following event types:
+
+**Order Events:**
+- `order_placed` - New order submitted
+- `order_filled` - Order matched and executed
+- `order_cancelled` - Order cancelled
+
+**Position Events:**
+- `position_minted` - New position tokens created
+- `position_burned` - Position tokens destroyed
+
+**USDC Events:**
+- `usdc_deposited` - USDC deposited to vault
+- `usdc_withdrawn` - USDC withdrawn from vault
+
+**Market Events:**
+- `market_opened` - Market opened for trading
+- `market_closed` - Market closed for trading
+- `market_settled` - Market outcome determined
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets/v1' 
+});
+
+const disconnect = client.listen(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  (event) => {
+    switch (event.type) {
+      case 'order_placed':
+        console.log(`Order placed: ${event.orderId}`, {
+          market: event.marketId,
+          action: event.action,
+          side: event.side,
+          quantity: event.number,
+          price: event.priceUusdc / 1_000_000,
+        });
+        break;
+      
+      case 'order_filled':
+        console.log(`Order filled: ${event.orderId}`);
+        break;
+      
+      case 'usdc_deposited':
+        const usdcAmount = event.uusdcAmount / 1_000_000;
+        console.log(`Deposited ${usdcAmount} USDC`);
+        break;
+      
+      case 'position_minted':
+        console.log(`Minted ${event.number} ${event.side} tokens for ${event.marketId}`);
+        break;
+      
+      case 'market_settled':
+        console.log(`Market ${event.marketId} settled:`, event.result);
+        break;
+      
+      default:
+        console.log('Received event:', event);
+    }
+  },
+  {
+    onConnect: () => console.log('Connected to event stream'),
+    onDisconnect: () => console.log('Disconnected from event stream'),
+    onError: (error) => console.error('WebSocket error:', error),
+    reconnect: true,
+  }
+);
+
+// Later, when you want to stop listening:
+// disconnect();
+```
+
+## Market Ticker Updates
+
+Subscribe to real-time price and volume updates for a specific Kalshi event.
+
+### `listenToKalshiEvent`
+
+```typescript
+listenToKalshiEvent(
+  eventTicker: string,
+  onTicker: (update: KalshiTickerUpdate) => void,
+  options?: {
+    onError?: (error: Error) => void;
+    onConnect?: () => void;
+    onDisconnect?: () => void;
+    reconnect?: boolean;
+  }
+): () => void
+```
+
+#### Parameters
+
+<ParamField path="eventTicker" type="string" required>
+  Kalshi event ticker (e.g., `"KXFEDDECISION-26JAN"`)
+</ParamField>
+
+<ParamField path="onTicker" type="function" required>
+  Callback function that receives ticker updates for markets in the event
+</ParamField>
+
+<ParamField path="options.onError" type="function">
+  Optional callback for handling WebSocket errors
+</ParamField>
+
+<ParamField path="options.onConnect" type="function">
+  Optional callback invoked when WebSocket connection is established
+</ParamField>
+
+<ParamField path="options.onDisconnect" type="function">
+  Optional callback invoked when WebSocket connection closes
+</ParamField>
+
+<ParamField path="options.reconnect" type="boolean">
+  Enable automatic reconnection (default: `true`). Uses exponential backoff with max 5 attempts.
+</ParamField>
+
+#### Returns
+
+A disconnect function to stop listening and close the WebSocket connection.
+
+#### Ticker Update Fields
+
+<ParamField path="market_ticker" type="string">
+  Market ticker identifier
+</ParamField>
+
+<ParamField path="yes_bid_uusdc" type="number">
+  Current best bid price for YES side in µUSDC
+</ParamField>
+
+<ParamField path="yes_ask_uusdc" type="number">
+  Current best ask price for YES side in µUSDC
+</ParamField>
+
+<ParamField path="no_bid_uusdc" type="number">
+  Current best bid price for NO side in µUSDC
+</ParamField>
+
+<ParamField path="no_ask_uusdc" type="number">
+  Current best ask price for NO side in µUSDC
+</ParamField>
+
+<ParamField path="last_price_uusdc" type="number">
+  Last traded price in µUSDC
+</ParamField>
+
+<ParamField path="volume" type="number">
+  Total trading volume
+</ParamField>
+
+<ParamField path="open_interest" type="number">
+  Current open interest (outstanding contracts)
+</ParamField>
+
+#### Example
+
+```typescript
+const disconnect = client.listenToKalshiEvent(
+  'KXFEDDECISION-26JAN',
+  (update) => {
+    console.log(`Market: ${update.market_ticker}`);
+    
+    if (update.yes_bid_uusdc && update.yes_ask_uusdc) {
+      const yesBid = update.yes_bid_uusdc / 1_000_000;
+      const yesAsk = update.yes_ask_uusdc / 1_000_000;
+      console.log(`YES: $${yesBid} bid / $${yesAsk} ask`);
+    }
+    
+    if (update.no_bid_uusdc && update.no_ask_uusdc) {
+      const noBid = update.no_bid_uusdc / 1_000_000;
+      const noAsk = update.no_ask_uusdc / 1_000_000;
+      console.log(`NO: $${noBid} bid / $${noAsk} ask`);
+    }
+    
+    if (update.last_price_uusdc) {
+      console.log(`Last: $${update.last_price_uusdc / 1_000_000}`);
+    }
+    
+    if (update.volume !== undefined) {
+      console.log(`Volume: ${update.volume}`);
+    }
+    
+    if (update.open_interest !== undefined) {
+      console.log(`Open Interest: ${update.open_interest}`);
+    }
+  },
+  {
+    onConnect: () => console.log('Connected to Kalshi event stream'),
+    reconnect: true,
+  }
+);
+
+// Stop listening when done
+// disconnect();
+```
+
+## Connection Management
+
+Both methods return a disconnect function that should be called to properly clean up the WebSocket connection:
+
+```typescript
+const disconnect = client.listen(userAddress, onEvent);
+
+// Later, when component unmounts or user logs out:
+disconnect();
+```
+
+## Automatic Reconnection
+
+The SDK automatically handles connection failures with exponential backoff:
+
+- Initial reconnect delay: 1 second
+- Maximum reconnect delay: 30 seconds  
+- Maximum reconnect attempts: 5
+- Heartbeat interval: 30 seconds
+
+When the maximum number of reconnect attempts is reached, the connection will stop trying to reconnect. You can manually reconnect by calling the listen method again.
+
+## Error Handling
+
+```typescript
+const disconnect = client.listen(
+  userAddress,
+  (event) => {
+    console.log('Event:', event);
+  },
+  {
+    onError: (error) => {
+      // Handle WebSocket errors
+      console.error('Connection error:', error.message);
+      
+      // Optionally notify user or trigger fallback behavior
+      showErrorNotification('Lost connection to event stream');
+    },
+    onDisconnect: () => {
+      // Connection closed
+      console.log('Disconnected. Will attempt to reconnect...');
+    }
+  }
+);
+```
+
+## Important Notes
+
+- WebSocket connections are automatically kept alive with periodic heartbeat messages
+- Events are delivered in real-time as they occur on the blockchain or Kalshi platform
+- Multiple subscriptions can be active simultaneously (one per user address and/or event)
+- Reconnection is enabled by default but can be disabled by setting `reconnect: false`
+- Always call the disconnect function to avoid memory leaks when cleaning up
+

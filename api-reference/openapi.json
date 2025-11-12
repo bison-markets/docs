@@ -187,6 +187,111 @@
         }
       }
     },
+    "/get-withdraw-authorization": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "chain": {
+                    "type": "string",
+                    "enum": [
+                      "base"
+                    ],
+                    "description": "Chain to execute the action on; one of: base",
+                    "example": "base"
+                  },
+                  "userAddress": {
+                    "type": "string",
+                    "pattern": "^0x[a-fA-F0-9]{40}$",
+                    "description": "User wallet address",
+                    "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                  }
+                },
+                "required": [
+                  "chain",
+                  "userAddress"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw authorization generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uuid": {
+                      "type": "string",
+                      "description": "Unique authorization ID"
+                    },
+                    "signature": {
+                      "type": "string",
+                      "description": "EIP-712 signature for the authorization"
+                    },
+                    "expiresAt": {
+                      "type": "number",
+                      "description": "Unix timestamp when authorization expires"
+                    },
+                    "maxWithdrawAmount": {
+                      "type": "number",
+                      "description": "Maximum amount user can withdraw in µUSDC"
+                    }
+                  },
+                  "required": [
+                    "uuid",
+                    "signature",
+                    "expiresAt",
+                    "maxWithdrawAmount"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - no deposited balance to withdraw",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/deposited-balance": {
       "get": {
         "parameters": [
@@ -216,14 +321,14 @@
                       "pattern": "^0x[a-fA-F0-9]{40}$",
                       "description": "User wallet address"
                     },
-                    "depositedBalanceMyrs": {
+                    "depositedBalanceUusdc": {
                       "type": "number",
-                      "description": "Deposited USDC balance in myrs (1 myr = $0.0001)"
+                      "description": "Deposited USDC balance in µUSDC"
                     }
                   },
                   "required": [
                     "userAddress",
-                    "depositedBalanceMyrs"
+                    "depositedBalanceUusdc"
                   ]
                 }
               }
@@ -547,10 +652,10 @@
                           "filledQuantity": {
                             "type": "number"
                           },
-                          "filledMyrs": {
+                          "filledUusdc": {
                             "type": "number"
                           },
-                          "priceMyrs": {
+                          "priceUusdc": {
                             "type": "number"
                           },
                           "chain": {
@@ -571,8 +676,8 @@
                           "action",
                           "requestedQuantity",
                           "filledQuantity",
-                          "filledMyrs",
-                          "priceMyrs",
+                          "filledUusdc",
+                          "priceUusdc",
                           "chain",
                           "createdAt",
                           "updatedAt"
@@ -783,19 +888,19 @@
                               "determined"
                             ]
                           },
-                          "yes_bid_myrs": {
+                          "yes_bid_uusdc": {
                             "type": "number"
                           },
-                          "yes_ask_myrs": {
+                          "yes_ask_uusdc": {
                             "type": "number"
                           },
-                          "no_bid_myrs": {
+                          "no_bid_uusdc": {
                             "type": "number"
                           },
-                          "no_ask_myrs": {
+                          "no_ask_uusdc": {
                             "type": "number"
                           },
-                          "last_price_myrs": {
+                          "last_price_uusdc": {
                             "type": "number"
                           }
                         },
@@ -1022,12 +1127,12 @@
                     "description": "Number of contracts",
                     "example": 100
                   },
-                  "priceMyrs": {
+                  "priceUusdc": {
                     "type": "number",
                     "minimum": 1,
-                    "maximum": 10000,
-                    "description": "Price per contract in myrs (1-10000)",
-                    "example": 7500
+                    "maximum": 1000000,
+                    "description": "Price per contract in µUSDC (1-1000000)",
+                    "example": 750000
                   },
                   "action": {
                     "type": "string",
@@ -1068,7 +1173,7 @@
                   "chain",
                   "marketId",
                   "number",
-                  "priceMyrs",
+                  "priceUusdc",
                   "action",
                   "side",
                   "userAddress",
@@ -1279,188 +1384,6 @@
           },
           "500": {
             "description": "Failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/events/kalshi/enqueue": {
-      "post": {
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "order_filled"
-                        ]
-                      },
-                      "orderId": {
-                        "type": "string"
-                      },
-                      "tradeId": {
-                        "type": "string"
-                      },
-                      "marketId": {
-                        "type": "string"
-                      },
-                      "action": {
-                        "type": "string",
-                        "enum": [
-                          "buy",
-                          "sell"
-                        ]
-                      },
-                      "side": {
-                        "type": "string",
-                        "enum": [
-                          "yes",
-                          "no"
-                        ]
-                      },
-                      "number": {
-                        "type": "number",
-                        "minimum": 0,
-                        "exclusiveMinimum": true
-                      },
-                      "priceUsdMyrs": {
-                        "type": "number"
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "orderId",
-                      "marketId",
-                      "action",
-                      "side",
-                      "number",
-                      "priceUsdMyrs"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "market_settled"
-                        ]
-                      },
-                      "marketId": {
-                        "type": "string"
-                      },
-                      "result": {
-                        "type": "string",
-                        "enum": [
-                          "yes",
-                          "no"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "marketId"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "market_closed"
-                        ]
-                      },
-                      "marketId": {
-                        "type": "string"
-                      },
-                      "result": {
-                        "type": "string",
-                        "enum": [
-                          "yes",
-                          "no"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "marketId"
-                    ]
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "type": {
-                        "type": "string",
-                        "enum": [
-                          "market_opened"
-                        ]
-                      },
-                      "marketId": {
-                        "type": "string"
-                      },
-                      "result": {
-                        "type": "string",
-                        "enum": [
-                          "yes",
-                          "no"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "type",
-                      "marketId"
-                    ]
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Kalshi event enqueued successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean"
-                    },
-                    "message": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid event payload",
             "content": {
               "application/json": {
                 "schema": {

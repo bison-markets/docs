@@ -1,0 +1,460 @@
+---
+title: "Trades"
+description: "Placing orders and managing positions"
+---
+
+## Overview
+
+The SDK provides high-level methods for trading on Kalshi markets:
+
+- `executeBuyFlow` / `executeSellFlow` - Place buy/sell orders with automatic signature generation
+- `executeCancelOrderFlow` - Cancel existing orders
+- `executeMintFlow` / `executeBurnFlow` - Create/destroy position tokens
+- `getUserOrders` / `getUserPositions` - Query user's orders and positions
+
+## Placing Orders
+
+Place limit orders on Kalshi markets. The SDK handles EIP-712 signature generation automatically.
+
+### `executeBuyFlow`
+
+```typescript
+async executeBuyFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+  priceUusdc: number;
+  onEvent?: (event: BisonEvent) => void;
+  onError?: (error: Error) => void;
+}): Promise<{ disconnect: () => void; txHash: `0x${string}` | null }>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing messages
+</ParamField>
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading contract state
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported)
+</ParamField>
+
+<ParamField path="vaultAddress" type="string" required>
+  Address of the Bison vault contract
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Kalshi market ticker (e.g., `"KXFEDDECISION-26JAN-T425"`)
+</ParamField>
+
+<ParamField path="side" type="string" required>
+  Position side: `"yes"` or `"no"`
+</ParamField>
+
+<ParamField path="number" type="number" required>
+  Number of contracts to buy
+</ParamField>
+
+<ParamField path="priceUusdc" type="number" required>
+  Limit price in µUSDC
+</ParamField>
+
+<ParamField path="onEvent" type="function">
+  Optional callback for order events (placed, filled, etc.)
+</ParamField>
+
+<ParamField path="onError" type="function">
+  Optional callback for WebSocket errors
+</ParamField>
+
+#### Returns
+
+Object containing:
+- `disconnect` - Function to stop listening for events
+- `txHash` - Transaction hash (currently always `null` for off-chain orders)
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+import { createWalletClient, createPublicClient, http, custom } from 'viem';
+import { base } from 'viem/chains';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets/v1' 
+});
+
+const walletClient = createWalletClient({
+  chain: base,
+  transport: custom(window.ethereum!),
+});
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(),
+});
+
+// Buy 10 YES contracts at 65 cents each
+const result = await client.executeBuyFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'yes',
+  number: 10,
+  priceUusdc: 650000, // $0.65 * 10^6
+  onEvent: (event) => {
+    if (event.type === 'order_placed') {
+      console.log('Order placed successfully:', event.orderId);
+    } else if (event.type === 'order_filled') {
+      console.log('Order filled:', event.orderId);
+    }
+  },
+  onError: (error) => {
+    console.error('WebSocket error:', error);
+  },
+});
+
+// Stop listening for events when done
+// result.disconnect();
+```
+
+### `executeSellFlow`
+
+Works identically to `executeBuyFlow` but places a sell order.
+
+```typescript
+async executeSellFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+  priceUusdc: number;
+  onEvent?: (event: BisonEvent) => void;
+  onError?: (error: Error) => void;
+}): Promise<{ disconnect: () => void; txHash: `0x${string}` | null }>
+```
+
+#### Example
+
+```typescript
+// Sell 5 NO contracts at 40 cents each
+const result = await client.executeSellFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'no',
+  number: 5,
+  priceUusdc: 400000, // $0.40 * 10^6
+});
+```
+
+## Cancelling Orders
+
+Cancel an existing open order.
+
+### `executeCancelOrderFlow`
+
+```typescript
+async executeCancelOrderFlow(params: {
+  walletClient: WalletClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  orderId: string;
+}): Promise<void>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing messages
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported)
+</ParamField>
+
+<ParamField path="vaultAddress" type="string" required>
+  Address of the Bison vault contract
+</ParamField>
+
+<ParamField path="orderId" type="string" required>
+  ID of the order to cancel (from order event or `getUserOrders`)
+</ParamField>
+
+#### Example
+
+```typescript
+await client.executeCancelOrderFlow({
+  walletClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  orderId: 'abc123-order-id',
+});
+
+console.log('Order cancellation requested');
+```
+
+## Minting & Burning Positions
+
+Create or destroy position tokens directly on-chain.
+
+### `executeMintFlow`
+
+Mint new position tokens by locking USDC in the vault.
+
+```typescript
+async executeMintFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+}): Promise<{ txHash: `0x${string}` }>
+```
+
+#### Example
+
+```typescript
+// Mint 20 YES tokens for a market
+const result = await client.executeMintFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'yes',
+  number: 20,
+});
+
+console.log('Tokens minted! Transaction:', result.txHash);
+```
+
+### `executeBurnFlow`
+
+Burn position tokens to unlock USDC from the vault.
+
+```typescript
+async executeBurnFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+}): Promise<{ txHash: `0x${string}` }>
+```
+
+#### Example
+
+```typescript
+// Burn 15 NO tokens
+const result = await client.executeBurnFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'no',
+  number: 15,
+});
+
+console.log('Tokens burned! Transaction:', result.txHash);
+```
+
+## Querying Orders & Positions
+
+### `getUserOrders`
+
+Get all orders for a user.
+
+```typescript
+async getUserOrders(userId: string): Promise<GetUserOrdersResponse>
+```
+
+#### Example
+
+```typescript
+const { orders } = await client.getUserOrders(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+);
+
+console.log('Open orders:');
+orders.forEach(order => {
+  console.log(`${order.action} ${order.requestedQuantity} ${order.side} @ $${order.priceUusdc / 1_000_000}`);
+  console.log(`  Market: ${order.marketId}`);
+  console.log(`  Filled: ${order.filledQuantity}/${order.requestedQuantity}`);
+  console.log(`  Order ID: ${order.kalshiOrderId}`);
+});
+```
+
+### `getUserPositions`
+
+Get all positions for a user.
+
+```typescript
+async getUserPositions(userId: string): Promise<GetUserPositionsResponse>
+```
+
+#### Example
+
+```typescript
+const { positions } = await client.getUserPositions(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+);
+
+console.log('Current positions:');
+positions.forEach(position => {
+  console.log(`Market: ${position.marketId}`);
+  console.log(`  ${position.side.toUpperCase()}: ${position.quantity} contracts`);
+});
+```
+
+## Position Token Utilities
+
+Get token addresses and balances for position tokens.
+
+### `getPositionTokenAddress`
+
+```typescript
+async getPositionTokenAddress(params: {
+  publicClient: PublicClient;
+  vaultAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+}): Promise<`0x${string}` | null>
+```
+
+Returns the ERC20 token address for a position, or `null` if not yet created.
+
+### `getTokenBalance`
+
+```typescript
+async getTokenBalance(params: {
+  publicClient: PublicClient;
+  tokenAddress: `0x${string}`;
+  userAddress: `0x${string}`;
+}): Promise<bigint>
+```
+
+Returns the token balance for a user.
+
+### `addTokenToWallet`
+
+```typescript
+async addTokenToWallet(params: {
+  tokenAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+}): Promise<boolean>
+```
+
+Prompts the user to add a position token to their wallet (MetaMask, etc.).
+
+#### Example
+
+```typescript
+// Get token address
+const tokenAddress = await client.getPositionTokenAddress({
+  publicClient,
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'yes',
+});
+
+if (tokenAddress) {
+  // Get user's balance
+  const balance = await client.getTokenBalance({
+    publicClient,
+    tokenAddress,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  });
+  
+  console.log('Token balance:', balance.toString());
+  
+  // Add to wallet
+  const added = await client.addTokenToWallet({
+    tokenAddress,
+    marketId: 'KXFEDDECISION-26JAN-T425',
+    side: 'yes',
+  });
+  
+  if (added) {
+    console.log('Token added to wallet');
+  }
+}
+```
+
+## Error Handling
+
+```typescript
+try {
+  await client.executeBuyFlow({
+    walletClient,
+    publicClient,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    chain: 'base',
+    vaultAddress: '0x1234567890123456789012345678901234567890',
+    marketId: 'KXFEDDECISION-26JAN-T425',
+    side: 'yes',
+    number: 10,
+    priceUusdc: 650000,
+  });
+} catch (error) {
+  if (error instanceof Error) {
+    if (error.message.includes('insufficient balance')) {
+      console.error('Not enough USDC deposited');
+    } else if (error.message.includes('User rejected')) {
+      console.error('User cancelled signature request');
+    } else {
+      console.error('Failed to place order:', error.message);
+    }
+  }
+}
+```
+
+## Important Notes
+
+- All order prices are in µUSDC (1 USD = 1,000,000 µUSDC, so $0.65 = 650000 µUSDC)
+- Order signatures expire after 10 minutes
+- Minting requires sufficient deposited USDC in the vault
+- Burning requires holding the position tokens
+- The SDK automatically handles EIP-712 signature generation
+- WebSocket connection is automatically established for buy/sell flows
+- Always call `disconnect()` to clean up WebSocket connections
+

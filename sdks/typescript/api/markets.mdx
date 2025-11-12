@@ -1,0 +1,235 @@
+---
+title: "Markets"
+description: "Querying market data and metadata"
+---
+
+## Overview
+
+The SDK provides methods to query market information, event metadata, and system configuration.
+
+## Get Event Information
+
+Retrieve detailed information about a Kalshi event and its markets.
+
+### `getEvent`
+
+```typescript
+async getEvent(eventTicker: string): Promise<GetEventResponse>
+```
+
+#### Parameters
+
+<ParamField path="eventTicker" type="string" required>
+  Kalshi event ticker (e.g., `"KXFEDDECISION-26JAN"`)
+</ParamField>
+
+#### Returns
+
+Event information including all associated markets, their metadata, and current state.
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets/v1' 
+});
+
+const event = await client.getEvent('KXFEDDECISION-26JAN');
+
+console.log('Event:', event.event_ticker);
+console.log('Title:', event.title);
+console.log('Category:', event.category);
+console.log('Status:', event.status);
+
+// List all markets in the event
+event.markets.forEach(market => {
+  console.log(`Market: ${market.ticker}`);
+  console.log(`  Subtitle: ${market.subtitle}`);
+  console.log(`  Floor: ${market.floor_strike}`);
+  console.log(`  Cap: ${market.cap_strike}`);
+  console.log(`  Status: ${market.status}`);
+});
+```
+
+## Get Event Metadata
+
+Retrieve metadata for a Kalshi event, including human-readable information and timestamps.
+
+### `getEventMetadata`
+
+```typescript
+async getEventMetadata(eventTicker: string): Promise<GetEventMetadataResponse>
+```
+
+#### Parameters
+
+<ParamField path="eventTicker" type="string" required>
+  Kalshi event ticker (e.g., `"KXFEDDECISION-26JAN"`)
+</ParamField>
+
+#### Returns
+
+Event metadata including title, description, category, and important dates.
+
+#### Example
+
+```typescript
+const metadata = await client.getEventMetadata('KXFEDDECISION-26JAN');
+
+console.log('Title:', metadata.title);
+console.log('Category:', metadata.category);
+console.log('Series ticker:', metadata.series_ticker);
+console.log('Mutually exclusive:', metadata.mutually_exclusive);
+
+// Check event timing
+console.log('Settlement date:', new Date(metadata.settlement_date));
+console.log('Close date:', new Date(metadata.close_date));
+console.log('Open date:', new Date(metadata.open_date));
+```
+
+## Get Created Tokens
+
+Retrieve information about position tokens that have been created on-chain.
+
+### `getCreatedTokens`
+
+```typescript
+async getCreatedTokens(chain?: 'base'): Promise<GetCreatedTokensResponse>
+```
+
+#### Parameters
+
+<ParamField path="chain" type="string">
+  Optional chain identifier. Currently only `"base"` is supported.
+</ParamField>
+
+#### Returns
+
+List of created position tokens with their contract addresses and market information.
+
+#### Example
+
+```typescript
+const tokens = await client.getCreatedTokens('base');
+
+console.log('Created tokens:');
+tokens.forEach(token => {
+  console.log(`Market: ${token.marketId}`);
+  console.log(`  YES token: ${token.yesTokenAddress}`);
+  console.log(`  NO token: ${token.noTokenAddress}`);
+  console.log(`  Created at: ${new Date(token.createdAt)}`);
+});
+```
+
+## Get System Information
+
+Retrieve system configuration and contract addresses.
+
+### `getInfo`
+
+```typescript
+async getInfo(): Promise<GetInfoResponse>
+```
+
+#### Returns
+
+System information including vault addresses, USDC addresses, and supported chains.
+
+#### Example
+
+```typescript
+const info = await client.getInfo();
+
+console.log('Bison API Version:', info.version);
+console.log('Supported chains:', info.chains);
+
+// Get contract addresses for a specific chain
+const baseConfig = info.chains.base;
+console.log('Base configuration:');
+console.log('  Vault address:', baseConfig.vaultAddress);
+console.log('  USDC address:', baseConfig.usdcAddress);
+console.log('  Chain ID:', baseConfig.chainId);
+```
+
+## Complete Market Workflow Example
+
+Here's a complete example showing how to discover and monitor a market:
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets/v1' 
+});
+
+// 1. Get system info to find contract addresses
+const info = await client.getInfo();
+const vaultAddress = info.chains.base.vaultAddress;
+
+// 2. Get event information
+const event = await client.getEvent('KXFEDDECISION-26JAN');
+console.log(`Found ${event.markets.length} markets in event`);
+
+// 3. Find a specific market
+const market = event.markets.find(m => 
+  m.floor_strike === 425 && m.cap_strike === 450
+);
+
+if (!market) {
+  throw new Error('Market not found');
+}
+
+console.log('Trading market:', market.ticker);
+console.log('Range:', market.floor_strike, '-', market.cap_strike);
+
+// 4. Subscribe to real-time ticker updates
+const disconnect = client.listenToKalshiEvent(
+  event.event_ticker,
+  (update) => {
+    // Filter for our specific market
+    if (update.market_ticker === market.ticker) {
+      console.log(`${market.ticker} update:`);
+      if (update.yes_bid_uusdc && update.yes_ask_uusdc) {
+        console.log(`  YES: $${update.yes_bid_uusdc / 1_000_000} / $${update.yes_ask_uusdc / 1_000_000}`);
+      }
+      if (update.volume !== undefined) {
+        console.log(`  Volume: ${update.volume}`);
+      }
+    }
+  }
+);
+
+// Clean up when done
+// disconnect();
+```
+
+## Error Handling
+
+All methods throw errors when the API request fails:
+
+```typescript
+try {
+  const event = await client.getEvent('INVALID-TICKER');
+} catch (error) {
+  if (error instanceof Error) {
+    console.error('Failed to get event:', error.message);
+    
+    // Handle specific error cases
+    if (error.message.includes('not found')) {
+      console.log('Event does not exist');
+    } else if (error.message.includes('network')) {
+      console.log('Network error, retrying...');
+    }
+  }
+}
+```
+
+## Important Notes
+
+- Market status can be: `unopened`, `open`, `closed`, or `settled`
+- All dates are returned as ISO 8601 strings
+- Token addresses are only available after positions have been minted on-chain
+- The `getInfo` response is cached and safe to call frequently
+

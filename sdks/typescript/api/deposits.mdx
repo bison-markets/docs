@@ -1,0 +1,312 @@
+---
+title: "Deposits & Withdrawals"
+description: "Managing USDC deposits and withdrawals with the Bison SDK"
+---
+
+## Overview
+
+The SDK provides `executeDepositFlow` and `executeWithdrawFlow`, and `getDepositedUsdcBalance` methods to deposit and withdraw USDC from the Bison vault
+on a given chain. These methods handle all the necessary steps including asking for approvals and authorization signatures.
+
+## Depositing USDC
+
+Deposit USDC into the vault to enable trading on Kalshi markets.
+
+### `executeDepositFlow`
+
+```typescript
+async executeDepositFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  vaultAddress: `0x${string}`;
+  usdcAddress: `0x${string}`;
+  amount: number;
+}): Promise<`0x${string}`>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing transactions
+</ParamField>
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading contract state
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="vaultAddress" type="string" required>
+  Address of the Bison vault contract
+</ParamField>
+
+<ParamField path="usdcAddress" type="string" required>
+  Address of the USDC token contract
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount of USDC to deposit (in USDC, not wei)
+</ParamField>
+
+#### Returns
+
+Transaction hash of the deposit transaction.
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+import { createWalletClient, createPublicClient, http, custom } from 'viem';
+import { base } from 'viem/chains';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets/v1' 
+});
+
+const walletClient = createWalletClient({
+  chain: base,
+  transport: custom(window.ethereum!),
+});
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(),
+});
+
+// Deposit 100 USDC
+const txHash = await client.executeDepositFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base USDC
+  amount: 100,
+});
+
+console.log('Deposited! Transaction:', txHash);
+// Expected output: "Deposited! Transaction: 0xabc123..."
+```
+
+## Withdrawing USDC
+
+Withdraw USDC from your deposited balance in the vault.
+
+### `executeWithdrawFlow`
+
+```typescript
+async executeWithdrawFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  vaultAddress: `0x${string}`;
+  amount: number;
+}): Promise<`0x${string}`>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing transactions
+</ParamField>
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading contract state
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported)
+</ParamField>
+
+<ParamField path="vaultAddress" type="string" required>
+  Address of the Bison vault contract
+</ParamField>
+
+<ParamField path="amount" type="number" required>
+  Amount of USDC to withdraw (in USDC, not wei). Must not exceed your deposited balance.
+</ParamField>
+
+#### Returns
+
+Transaction hash of the withdrawal transaction.
+
+#### Example
+
+```typescript
+// Withdraw 50 USDC
+const txHash = await client.executeWithdrawFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  vaultAddress: '0x1234567890123456789012345678901234567890',
+  amount: 50,
+});
+
+console.log('Withdrawn! Transaction:', txHash);
+// Expected output: "Withdrawn! Transaction: 0xdef456..."
+```
+
+## Checking Balance
+
+Get the user's deposited USDC balance:
+
+### `getDepositedUsdcBalance`
+
+```typescript
+async getDepositedUsdcBalance(userAddress: string): Promise<{
+  depositedBalanceUusdc: number;
+}>
+```
+
+#### Example
+
+```typescript
+const balance = await client.getDepositedUsdcBalance(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+);
+
+// Convert µUSDC to USDC (1 USDC = 1,000,000 µUSDC)
+const usdcAmount = balance.depositedBalanceUusdc / 1_000_000;
+console.log(`Balance: ${usdcAmount} USDC`);
+// Expected output: "Balance: 100 USDC"
+```
+
+## Low-Level Methods
+
+For advanced use cases, you can use the low-level authorization methods:
+
+### `getWithdrawAuthorization`
+
+Get a signed authorization for withdrawing USDC:
+
+```typescript
+async getWithdrawAuthorization(options: {
+  chain: string;
+  userAddress: string;
+}): Promise<{
+  uuid: string;
+  signature: string;
+  expiresAt: number;
+  maxWithdrawAmount: number;
+}>
+```
+
+#### Example
+
+```typescript
+import { parseUnits } from 'viem';
+import { VAULT_ABI } from 'bison-sdk-ts';
+
+const auth = await client.getWithdrawAuthorization({
+  chain: 'base',
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+});
+
+console.log('Max withdraw amount:', auth.maxWithdrawAmount / 1_000_000, 'USDC');
+console.log('Expires at:', new Date(auth.expiresAt * 1000));
+// Expected output:
+// "Max withdraw amount: 100 USDC"
+// "Expires at: 2024-12-31T12:34:56.000Z"
+
+// Use the authorization with the vault contract
+const txHash = await walletClient.writeContract({
+  address: '0x1234567890123456789012345678901234567890',
+  abi: VAULT_ABI,
+  functionName: 'withdrawUSDC',
+  args: [
+    auth.uuid,
+    parseUnits('50', 6), // Amount in wei (6 decimals for USDC)
+    BigInt(auth.expiresAt),
+    auth.signature,
+  ],
+  account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+});
+
+console.log('Withdrawal transaction:', txHash);
+```
+
+## Error Handling
+
+All deposit and withdrawal methods throw errors when operations fail. Here's how to handle common errors:
+
+```typescript
+try {
+  const txHash = await client.executeDepositFlow({
+    walletClient,
+    publicClient,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    vaultAddress: '0x1234567890123456789012345678901234567890',
+    usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+    amount: 1000,
+  });
+  console.log('Success:', txHash);
+} catch (error) {
+  if (error instanceof Error) {
+    if (error.message.includes('insufficient funds')) {
+      console.error('Not enough USDC in wallet');
+      // Show error to user: "Insufficient USDC balance"
+    } else if (error.message.includes('User rejected')) {
+      console.error('User cancelled transaction');
+      // User declined wallet approval
+    } else if (error.message.includes('network')) {
+      console.error('Network error, please retry');
+      // Show retry button
+    } else {
+      console.error('Deposit failed:', error.message);
+      // Show generic error message
+    }
+  }
+}
+```
+
+### Withdrawal Error Handling
+
+```typescript
+try {
+  const txHash = await client.executeWithdrawFlow({
+    walletClient,
+    publicClient,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    chain: 'base',
+    vaultAddress: '0x1234567890123456789012345678901234567890',
+    amount: 50,
+  });
+  console.log('Withdrawn:', txHash);
+} catch (error) {
+  if (error instanceof Error) {
+    if (error.message.includes('exceeds maximum')) {
+      // Requested amount is more than available balance
+      console.error('Insufficient deposited balance');
+      
+      // Get actual balance
+      const balance = await client.getDepositedUsdcBalance(userAddress);
+      const maxAmount = balance.depositedBalanceUusdc / 1_000_000;
+      console.log(`Maximum withdrawable: ${maxAmount} USDC`);
+    } else if (error.message.includes('expired')) {
+      console.error('Authorization expired, retrying...');
+      // Retry the withdrawal
+    } else {
+      console.error('Withdrawal failed:', error.message);
+    }
+  }
+}
+```
+
+## Important Notes
+
+- Withdraw authorizations expire after 30 seconds
+- Each authorization can only be used once (replay protection)
+- You can only withdraw up to your deposited balance minus any active positions
+- After deposits/withdrawals, balances update automatically via blockchain events
+- The SDK handles USDC approval automatically for deposits
+- All amounts are in USDC (not wei), but the underlying contract uses 6 decimal places
+- Transaction confirmation can take 2-5 seconds on Base network
+

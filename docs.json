@@ -11,37 +11,37 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
-        "groups": [
+        "tab": "Home",
+        "pages": [
+          "index"
+        ]
+      },
+      {
+        "tab": "SDKs",
+        "pages": [
+          "sdks/introduction",
           {
-            "group": "Getting started",
+            "group": "TypeScript SDK",
+            "icon": "js",
             "pages": [
-              "index",
-              "quickstart",
-              "development"
-            ]
-          },
-          {
-            "group": "Customization",
-            "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "sdks/typescript/quickstart",
+              {
+                "group": "API Actions",
+                "pages": [
+                  "sdks/typescript/api/markets",
+                  "sdks/typescript/api/deposits",
+                  "sdks/typescript/api/trades",
+                  "sdks/typescript/api/events"
+                ]
+              }
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
-        "groups": [
+        "tab": "API Reference",
+        "pages": [
+          "api-reference/introduction",
           {
             "group": "System",
             "pages": [
@@ -49,8 +49,9 @@
             ]
           },
           {
-            "group": "Token Operations",
+            "group": "Tokenization",
             "pages": [
+              "api-reference/endpoint/created-tokens",
               "api-reference/endpoint/get-token-authorization"
             ]
           },
@@ -58,7 +59,7 @@
             "group": "Account",
             "pages": [
               "api-reference/endpoint/deposited-balance",
-              "api-reference/endpoint/created-tokens"
+              "api-reference/endpoint/get-withdraw-authorization"
             ]
           },
           {
@@ -80,10 +81,15 @@
             "group": "Events",
             "pages": [
               "api-reference/endpoint/get-event",
-              "api-reference/endpoint/get-event-metadata",
-              "api-reference/endpoint/events-kalshi-enqueue"
+              "api-reference/endpoint/get-event-metadata"
             ]
           }
+        ]
+      },
+      {
+        "tab": "WebSockets",
+        "pages": [
+          "websockets/introduction"
         ]
       }
     ],
@@ -111,6 +117,9 @@
     ]
   },
   "footer": {
-    "socials": {}
+    "socials": {
+      "website": "https://bison.markets",
+      "github": "https://github.com/bison-markets"
+    }
   }
 }

@@ -1,33 +1,18 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: 'API Introduction'
+description: "Introduction to using the Bison API directly"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+<Warning>
+For ease of integration (especially for frontends), we currently recommend using the [TypeScript SDK](/sdks/typescript/quickstart).
+If calling the API directly, you may find it useful to reference the TS SDK's
+[BisonClient source code](https://github.com/bison-markets/sdk-ts/blob/master/src/client.ts)
+since many Bison flows are multi-step & will require you to bring your own RPC client, EIP-712 signers, etc.
+with an Ethereum library like `viem` or `web3.py`.
+</Warning>
 
-## Welcome
+## Overview
 
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
-
-## Authentication
-
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
-
-```json
-"security": [
-  {
-    "bearerAuth": []
-  }
-]
-```
+The Bison API is a RESTful API that provides a simple interface for interacting with prediction markets via Bison.
+You can look at the [OpenAPI specification](https://api.bison.markets/v1/openapi) to import the complete reference
+and/or generate a client for your preferred language.

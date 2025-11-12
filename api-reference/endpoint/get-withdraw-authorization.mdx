@@ -1,0 +1,97 @@
+---
+title: 'Authorize Withdraw'
+openapi: 'POST /get-withdraw-authorization'
+---
+
+## Overview
+
+Generate a signed authorization to withdraw USDC from the vault. The authorization is valid for 30 seconds and can only be used once.
+
+## Request Body
+
+<ParamField path="chain" type="string" required>
+  Chain to execute the withdrawal on. Currently only `base` is supported.
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum wallet address (checksummed or lowercase).
+</ParamField>
+
+## Response
+
+<ResponseField name="uuid" type="string">
+  Unique authorization identifier used to prevent replay attacks.
+</ResponseField>
+
+<ResponseField name="signature" type="string">
+  EIP-712 signature for the withdrawal authorization that must be submitted to the vault contract.
+</ResponseField>
+
+<ResponseField name="expiresAt" type="number">
+  Unix timestamp when the authorization expires (30 seconds from creation).
+</ResponseField>
+
+<ResponseField name="maxWithdrawAmount" type="number">
+  Maximum amount the user can withdraw in µUSDC. This equals the user's current deposited balance.
+</ResponseField>
+
+## Error Responses
+
+<ResponseField name="400 - No Balance">
+  Returned when the user has no deposited balance to withdraw.
+  
+  ```json
+  {
+    "error": "No deposited balance to withdraw"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="500 - Server Error">
+  Returned when authorization generation fails.
+  
+  ```json
+  {
+    "error": "Withdraw authorization failed"
+  }
+  ```
+</ResponseField>
+
+## Example Request
+
+```json
+{
+  "chain": "base",
+  "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+}
+```
+
+## Example Response
+
+```json
+{
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "signature": "0x1234567890abcdef...",
+  "expiresAt": 1699564830,
+  "maxWithdrawAmount": 1000000
+}
+```
+
+## Usage Flow
+
+1. **Check Balance**: Ensure user has deposited USDC balance
+2. **Get Authorization**: Call this endpoint to get withdrawal signature
+3. **Execute Withdrawal**: Call `withdrawUSDC` on the vault contract with the authorization:
+   - `uuid`: Unique authorization ID
+   - `usdcAmount`: Amount to withdraw (≤ maxWithdrawAmount)
+   - `expiry`: Expiration timestamp
+   - `signature`: EIP-712 signature
+
+## Important Notes
+
+- Authorization expires in 30 seconds
+- Each authorization can only be used once (replay protection)
+- User must have sufficient deposited balance
+- Withdraw amount in contract call must not exceed `maxWithdrawAmount`
+- After withdrawal, the user's deposited balance is updated via EVM webhook
+
