@@ -5,12 +5,13 @@ description: "Real-time event streaming with WebSockets"
 
 ## Overview
 
-The SDK provides two WebSocket-based event streaming methods:
+The SDK provides three WebSocket-based event streaming methods:
 
 - `listen` - Subscribe to user-specific events (orders, positions, deposits, withdrawals)
 - `listenToKalshiEvent` - Subscribe to market ticker updates for a specific Kalshi event
+- `listenToOrderbook` - Subscribe to real-time orderbook snapshots and deltas for a specific market
 
-Both methods support automatic reconnection with exponential backoff.
+All methods support automatic reconnection with exponential backoff.
 
 ## User Events
 
@@ -264,15 +265,170 @@ const disconnect = client.listenToKalshiEvent(
 // disconnect();
 ```
 
-## Connection Management
+## Orderbook Updates
 
-Both methods return a disconnect function that should be called to properly clean up the WebSocket connection:
+Subscribe to real-time orderbook data for a specific market, including initial snapshots and incremental updates.
+
+### `listenToOrderbook`
 
 ```typescript
-const disconnect = client.listen(userAddress, onEvent);
+listenToOrderbook(
+  marketTicker: string,
+  onUpdate: (update: OrderbookUpdate) => void,
+  options?: {
+    onError?: (error: Error) => void;
+    onConnect?: () => void;
+    onDisconnect?: () => void;
+    reconnect?: boolean;
+  }
+): () => void
+```
+
+#### Parameters
+
+<ParamField path="marketTicker" type="string" required>
+  Kalshi market ticker (e.g., `"KXBTC-100K-DEC31"`)
+</ParamField>
+
+<ParamField path="onUpdate" type="function" required>
+  Callback function that receives orderbook updates (snapshots and deltas)
+</ParamField>
+
+<ParamField path="options.onError" type="function">
+  Optional callback for handling WebSocket errors
+</ParamField>
+
+<ParamField path="options.onConnect" type="function">
+  Optional callback invoked when WebSocket connection is established
+</ParamField>
+
+<ParamField path="options.onDisconnect" type="function">
+  Optional callback invoked when WebSocket connection closes
+</ParamField>
+
+<ParamField path="options.reconnect" type="boolean">
+  Enable automatic reconnection (default: `true`). Uses exponential backoff with max 5 attempts.
+</ParamField>
+
+#### Returns
+
+A disconnect function to stop listening and close the WebSocket connection.
+
+#### Update Types
+
+The callback receives one of two update types:
+
+**Snapshot Update (`OrderbookSnapshot`):**
+- Sent immediately upon connection
+- Contains the complete current orderbook state
+- Fields: `type`, `market_ticker`, `yes`, `no`
+
+**Delta Update (`OrderbookDelta`):**
+- Sent for each orderbook change
+- Contains incremental updates to specific price levels
+- Fields: `type`, `market_ticker`, `side`, `price_uusdc`, `delta`
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets' 
+});
+
+// Track orderbook state
+const orderbook = {
+  yes: new Map<number, number>(),  // price -> quantity
+  no: new Map<number, number>()     // price -> quantity
+};
+
+const disconnect = client.listenToOrderbook(
+  'KXBTC-100K-DEC31',
+  (update) => {
+    if (update.type === 'orderbook_snapshot') {
+      // Initialize orderbook with full snapshot
+      orderbook.yes.clear();
+      orderbook.no.clear();
+      
+      update.yes?.forEach(level => {
+        orderbook.yes.set(level.price_uusdc, level.quantity);
+      });
+      
+      update.no?.forEach(level => {
+        orderbook.no.set(level.price_uusdc, level.quantity);
+      });
+      
+      console.log('Orderbook initialized');
+      console.log(`YES levels: ${orderbook.yes.size}`);
+      console.log(`NO levels: ${orderbook.no.size}`);
+      
+    } else if (update.type === 'orderbook_delta') {
+      // Apply incremental update
+      const book = update.side === 'yes' ? orderbook.yes : orderbook.no;
+      const currentQty = book.get(update.price_uusdc) || 0;
+      const newQty = currentQty + update.delta;
+      
+      if (newQty <= 0) {
+        book.delete(update.price_uusdc);
+      } else {
+        book.set(update.price_uusdc, newQty);
+      }
+      
+      const priceUSDC = (update.price_uusdc / 1_000_000).toFixed(2);
+      console.log(`${update.side.toUpperCase()} @ $${priceUSDC}: ${newQty} contracts`);
+    }
+  },
+  {
+    onConnect: () => console.log('Connected to orderbook'),
+    onError: (error) => console.error('Orderbook error:', error),
+    reconnect: true,
+  }
+);
+
+// Helper function to get best bid/ask
+function getBestPrices() {
+  const yesPrices = Array.from(orderbook.yes.keys());
+  const noPrices = Array.from(orderbook.no.keys());
+  
+  return {
+    yesBid: yesPrices.length > 0 ? Math.max(...yesPrices) : null,
+    yesAsk: yesPrices.length > 0 ? Math.min(...yesPrices) : null,
+    noBid: noPrices.length > 0 ? Math.max(...noPrices) : null,
+    noAsk: noPrices.length > 0 ? Math.min(...noPrices) : null,
+  };
+}
+
+// Use after receiving updates
+setTimeout(() => {
+  const prices = getBestPrices();
+  console.log('Best prices:', {
+    yes: prices.yesBid && prices.yesAsk 
+      ? `${prices.yesBid / 1_000_000} / ${prices.yesAsk / 1_000_000}`
+      : 'N/A',
+    no: prices.noBid && prices.noAsk 
+      ? `${prices.noBid / 1_000_000} / ${prices.noAsk / 1_000_000}`
+      : 'N/A',
+  });
+}, 1000);
+
+// Stop listening when done
+// disconnect();
+```
+
+## Connection Management
+
+All three methods return a disconnect function that should be called to properly clean up the WebSocket connection:
+
+```typescript
+const disconnectUser = client.listen(userAddress, onEvent);
+const disconnectEvent = client.listenToKalshiEvent(eventTicker, onTicker);
+const disconnectOrderbook = client.listenToOrderbook(marketTicker, onUpdate);
 
 // Later, when component unmounts or user logs out:
-disconnect();
+disconnectUser();
+disconnectEvent();
+disconnectOrderbook();
 ```
 
 ## Automatic Reconnection
@@ -314,7 +470,9 @@ const disconnect = client.listen(
 
 - WebSocket connections are automatically kept alive with periodic heartbeat messages
 - Events are delivered in real-time as they occur on the blockchain or Kalshi platform
-- Multiple subscriptions can be active simultaneously (one per user address and/or event)
+- Multiple subscriptions can be active simultaneously (user events, market tickers, orderbooks)
 - Reconnection is enabled by default but can be disabled by setting `reconnect: false`
 - Always call the disconnect function to avoid memory leaks when cleaning up
+- For orderbook subscriptions, always process the initial snapshot before applying deltas
+- Orderbook delta updates are cumulative - add them to existing quantities, don't replace
 

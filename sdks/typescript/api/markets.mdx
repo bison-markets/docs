@@ -354,10 +354,190 @@ try {
 }
 ```
 
+## Position Token Utilities
+
+The SDK provides utility methods for working with position tokens on-chain.
+
+### `getPositionTokenAddress`
+
+Get the on-chain token address for a specific market position.
+
+```typescript
+async getPositionTokenAddress(params: {
+  publicClient: PublicClient;
+  chain: 'base';
+  marketId: string;
+  side: 'yes' | 'no';
+}): Promise<`0x${string}` | null>
+```
+
+#### Parameters
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading from the blockchain
+</ParamField>
+
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported)
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Market ticker
+</ParamField>
+
+<ParamField path="side" type="string" required>
+  Position side: `"yes"` or `"no"`
+</ParamField>
+
+#### Returns
+
+Token address if the position has been minted, `null` otherwise.
+
+#### Example
+
+```typescript
+import { createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(),
+});
+
+const tokenAddress = await client.getPositionTokenAddress({
+  publicClient,
+  chain: 'base',
+  marketId: 'KXBTC-100K-DEC31',
+  side: 'yes',
+});
+
+if (tokenAddress) {
+  console.log('YES token address:', tokenAddress);
+} else {
+  console.log('Position tokens not yet minted');
+}
+```
+
+### `getTokenBalance`
+
+Get the balance of an ERC20 token for a specific address.
+
+```typescript
+async getTokenBalance(params: {
+  publicClient: PublicClient;
+  tokenAddress: `0x${string}`;
+  userAddress: `0x${string}`;
+}): Promise<bigint>
+```
+
+#### Parameters
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading from the blockchain
+</ParamField>
+
+<ParamField path="tokenAddress" type="string" required>
+  ERC20 token contract address
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  Wallet address to check balance for
+</ParamField>
+
+#### Returns
+
+Token balance as a `bigint`. Position tokens have 0 decimals.
+
+#### Example
+
+```typescript
+const tokenAddress = await client.getPositionTokenAddress({
+  publicClient,
+  chain: 'base',
+  marketId: 'KXBTC-100K-DEC31',
+  side: 'yes',
+});
+
+if (tokenAddress) {
+  const balance = await client.getTokenBalance({
+    publicClient,
+    tokenAddress,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  });
+  
+  console.log(`Balance: ${balance} YES tokens`);
+}
+```
+
+### `addTokenToWallet`
+
+Add a position token to the user's wallet (e.g., MetaMask).
+
+```typescript
+async addTokenToWallet(params: {
+  tokenAddress: `0x${string}`;
+  marketId: string;
+  side: 'yes' | 'no';
+}): Promise<boolean>
+```
+
+#### Parameters
+
+<ParamField path="tokenAddress" type="string" required>
+  Position token contract address
+</ParamField>
+
+<ParamField path="marketId" type="string" required>
+  Market ticker (used for token symbol)
+</ParamField>
+
+<ParamField path="side" type="string" required>
+  Position side: `"yes"` or `"no"`
+</ParamField>
+
+#### Returns
+
+`true` if the user accepted the request, `false` otherwise.
+
+#### Example
+
+```typescript
+const tokenAddress = await client.getPositionTokenAddress({
+  publicClient,
+  chain: 'base',
+  marketId: 'KXBTC-100K-DEC31',
+  side: 'yes',
+});
+
+if (tokenAddress) {
+  try {
+    const added = await client.addTokenToWallet({
+      tokenAddress,
+      marketId: 'KXBTC-100K-DEC31',
+      side: 'yes',
+    });
+    
+    if (added) {
+      console.log('Token added to wallet successfully');
+    } else {
+      console.log('User declined to add token');
+    }
+  } catch (error) {
+    console.error('Failed to add token:', error);
+  }
+}
+```
+
+<Note>
+This method requires a browser environment with an injected Web3 wallet (like MetaMask). It will throw an error if called in a non-browser environment or if no wallet is detected.
+</Note>
+
 ## Important Notes
 
 - Market status can be: `unopened`, `open`, `closed`, or `settled`
 - All dates are returned as ISO 8601 strings
 - Token addresses are only available after positions have been minted on-chain
 - The `getInfo` response is cached and safe to call frequently
+- Position tokens have 0 decimals - quantities represent whole tokens
+- Token symbols are automatically generated from the market ID (first 7 chars) and side
 
