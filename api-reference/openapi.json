@@ -40,12 +40,45 @@
                             "rpcUrl": {
                               "type": "string",
                               "description": "RPC URL for the chain",
-                              "example": "https://mainnet.base.org"
+                              "example": "https://rpc.example.com"
                             },
                             "chainId": {
                               "type": "number",
                               "description": "Chain ID",
-                              "example": 8453
+                              "example": 1337
+                            }
+                          },
+                          "required": [
+                            "vaultAddress",
+                            "usdcAddress",
+                            "rpcUrl",
+                            "chainId"
+                          ]
+                        },
+                        "bsc": {
+                          "type": "object",
+                          "properties": {
+                            "vaultAddress": {
+                              "type": "string",
+                              "pattern": "^0x[a-fA-F0-9]{40}$",
+                              "description": "Address of Vault contract",
+                              "example": "0x1234567890123456789012345678901234567890"
+                            },
+                            "usdcAddress": {
+                              "type": "string",
+                              "pattern": "^0x[a-fA-F0-9]{40}$",
+                              "description": "Address of USDC token contract",
+                              "example": "0x0987654321098765432109876543210987654321"
+                            },
+                            "rpcUrl": {
+                              "type": "string",
+                              "description": "RPC URL for the chain",
+                              "example": "https://rpc.example.com"
+                            },
+                            "chainId": {
+                              "type": "number",
+                              "description": "Chain ID",
+                              "example": 1337
                             }
                           },
                           "required": [
@@ -57,7 +90,8 @@
                         }
                       },
                       "required": [
-                        "base"
+                        "base",
+                        "bsc"
                       ]
                     }
                   },
@@ -82,9 +116,10 @@
                   "chain": {
                     "type": "string",
                     "enum": [
-                      "base"
+                      "base",
+                      "bsc"
                     ],
-                    "description": "Chain to execute the action on; one of: base",
+                    "description": "Chain to execute the action on; one of: base, bsc",
                     "example": "base"
                   },
                   "marketId": {
@@ -198,9 +233,10 @@
                   "chain": {
                     "type": "string",
                     "enum": [
-                      "base"
+                      "base",
+                      "bsc"
                     ],
-                    "description": "Chain to execute the action on; one of: base",
+                    "description": "Chain to execute the action on; one of: base, bsc",
                     "example": "base"
                   },
                   "userAddress": {
@@ -208,11 +244,19 @@
                     "pattern": "^0x[a-fA-F0-9]{40}$",
                     "description": "User wallet address",
                     "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                  },
+                  "amountUusdc": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "description": "Amount to withdraw in µUSDC (micro-USDC, 6 decimals)",
+                    "example": 1000000
                   }
                 },
                 "required": [
                   "chain",
-                  "userAddress"
+                  "userAddress",
+                  "amountUusdc"
                 ]
               }
             }
@@ -362,7 +406,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "base"
+                "base",
+                "bsc"
               ],
               "description": "Filter by chain; defaults to all chains",
               "example": "base"
@@ -878,6 +923,12 @@
                           "title": {
                             "type": "string"
                           },
+                          "yes_sub_title": {
+                            "type": "string"
+                          },
+                          "no_sub_title": {
+                            "type": "string"
+                          },
                           "status": {
                             "type": "string",
                             "enum": [
@@ -887,6 +938,15 @@
                               "settled",
                               "determined"
                             ]
+                          },
+                          "open_time": {
+                            "type": "string"
+                          },
+                          "close_time": {
+                            "type": "string"
+                          },
+                          "expiration_time": {
+                            "type": "string"
                           },
                           "yes_bid_uusdc": {
                             "type": "number"
@@ -1110,9 +1170,10 @@
                   "chain": {
                     "type": "string",
                     "enum": [
-                      "base"
+                      "base",
+                      "bsc"
                     ],
-                    "description": "Chain to execute the action on; one of: base",
+                    "description": "Chain to execute the action on; one of: base, bsc",
                     "example": "base"
                   },
                   "marketId": {
@@ -1232,6 +1293,24 @@
               }
             }
           },
+          "404": {
+            "description": "Market not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Failed",
             "content": {
@@ -1264,9 +1343,10 @@
                   "chain": {
                     "type": "string",
                     "enum": [
-                      "base"
+                      "base",
+                      "bsc"
                     ],
-                    "description": "Chain to execute the action on; one of: base",
+                    "description": "Chain to execute the action on; one of: base, bsc",
                     "example": "base"
                   },
                   "orderId": {

@@ -1,6 +1,6 @@
 ---
-title: "WebSocket Introduction"
-description: "Introduction to using Bison WebSockets directly"
+title: "WebSocket API"
+description: "Real-time market data and event streams via WebSockets"
 ---
 
 <Warning>
@@ -11,4 +11,173 @@ If using the WebSocket API directly, you may find it useful to reference the TS 
 
 ## Overview
 
-The Bison API provides real-time market & event data streams via WebSockets. This allows you to receive updates as they happen, rather than polling for updates at fixed intervals.
+The Bison API provides real-time market and event data streams via WebSockets. This allows you to receive updates as they happen, rather than polling for updates at fixed intervals.
+
+## Available WebSocket Endpoints
+
+Bison provides three WebSocket endpoints for different use cases:
+
+<CardGroup cols={3}>
+  <Card title="User Events" icon="user" href="/websockets/messages/user-events">
+    Receive updates about your orders, positions, and balances
+  </Card>
+  
+  <Card title="Market Tickers" icon="chart-line" href="/websockets/messages/market-tickers">
+    Stream live market data for all markets in an event
+  </Card>
+  
+  <Card title="Orderbook Data" icon="layer-group" href="/websockets/messages/orderbook">
+    Get real-time orderbook snapshots and deltas
+  </Card>
+</CardGroup>
+
+## Connection Pattern
+
+All WebSocket endpoints follow the same connection pattern:
+
+<Steps>
+  <Step title="Establish Connection">
+    Connect to the WebSocket endpoint using the `wss://` protocol (or `ws://` for local development).
+  </Step>
+  
+  <Step title="Handle Messages">
+    Listen for JSON-formatted messages containing real-time updates.
+  </Step>
+  
+  <Step title="Send Heartbeats">
+    Send ping messages every 30 seconds to keep the connection alive.
+  </Step>
+  
+  <Step title="Handle Disconnection">
+    Implement reconnection logic with exponential backoff if the connection drops.
+  </Step>
+</Steps>
+
+## Heartbeat Mechanism
+
+To keep connections alive, send a ping message every 30 seconds:
+
+```json
+{
+  "type": "ping"
+}
+```
+
+The server will respond with a pong message, but you don't need to handle it explicitly. If you don't send pings, the connection may be closed by the server.
+
+## Reconnection Strategy
+
+When a connection closes unexpectedly, implement exponential backoff for reconnection:
+
+1. First retry: 1 second delay
+2. Second retry: 2 seconds delay
+3. Third retry: 4 seconds delay
+4. Fourth retry: 8 seconds delay
+5. Fifth retry: 16 seconds delay
+6. Maximum retry: 30 seconds delay
+
+After 5 failed attempts, you may want to alert the user or stop retrying.
+
+## Error Handling
+
+WebSocket connections can fail for various reasons. Implement proper error handling:
+
+```javascript
+function connectWithRetry(url, maxRetries = 5) {
+  let retries = 0;
+  let ws = null;
+  
+  function connect() {
+    ws = new WebSocket(url);
+    
+    ws.onopen = () => {
+      console.log("Connected");
+      retries = 0; // Reset retry counter on success
+      
+      // Setup heartbeat
+      const heartbeat = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: "ping" }));
+        } else {
+          clearInterval(heartbeat);
+        }
+      }, 30000);
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      // Handle messages
+    };
+    
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+    
+    ws.onclose = (event) => {
+      console.log("Connection closed");
+      
+      // Attempt reconnection with exponential backoff
+      if (retries < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, retries), 30000);
+        retries++;
+        
+        console.log(`Reconnecting in ${delay}ms (attempt ${retries}/${maxRetries})`);
+        
+        setTimeout(connect, delay);
+      } else {
+        console.error("Max reconnection attempts reached");
+      }
+    };
+  }
+  
+  connect();
+  
+  // Return disconnect function
+  return () => {
+    if (ws) {
+      retries = maxRetries; // Prevent auto-reconnect
+      ws.close();
+    }
+  };
+}
+
+// Usage
+const disconnect = connectWithRetry(
+  "wss://api.bison.markets/ws/evm/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+);
+
+// Later, to disconnect:
+disconnect();
+```
+
+## Best Practices
+
+<Steps>
+  <Step title="Always Send Heartbeats">
+    Send ping messages every 30 seconds to prevent connection timeouts.
+  </Step>
+  
+  <Step title="Implement Reconnection">
+    Use exponential backoff to reconnect after disconnections.
+  </Step>
+  
+  <Step title="Handle Partial Updates">
+    For orderbook data, start with the snapshot and apply deltas incrementally.
+  </Step>
+  
+  <Step title="Validate Messages">
+    Always parse and validate incoming JSON messages before processing.
+  </Step>
+  
+  <Step title="Clean Up Resources">
+    Clear intervals and close connections when you're done listening.
+  </Step>
+</Steps>
+
+## Next Steps
+
+Explore the message formats for each WebSocket endpoint:
+
+- [User Events](/websockets/messages/user-events) - Order, position, and balance updates
+- [Market Tickers](/websockets/messages/market-tickers) - Live bid/ask prices and volume
+- [Orderbook Data](/websockets/messages/orderbook) - Real-time order book depth

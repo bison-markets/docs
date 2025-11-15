@@ -1,0 +1,169 @@
+---
+title: "Market Tickers"
+description: "Stream live market data for all markets in an event"
+---
+
+## Overview
+
+Connect to receive real-time market data for all markets within a specific event, including bid/ask prices, volume, and open interest.
+
+## Connection
+
+```
+wss://api.bison.markets/ws/kalshi/event/{eventTicker}
+```
+
+<ParamField path="eventTicker" type="string" required>
+  The Kalshi event ticker (e.g., `KXBTC-100K`)
+</ParamField>
+
+## Example Connection
+
+```javascript
+const eventTicker = "KXBTC-100K";
+const ws = new WebSocket(
+  `wss://api.bison.markets/ws/kalshi/event/${eventTicker}`
+);
+
+ws.onopen = () => {
+  console.log(`Connected to ${eventTicker} market data`);
+  
+  // Send heartbeat every 30 seconds
+  setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ping" }));
+    }
+  }, 30000);
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  // Ignore ping/pong messages
+  if (data.type === "ping" || data.type === "pong") {
+    return;
+  }
+  
+  console.log("Market update:", data);
+  updateMarketDisplay(data);
+};
+```
+
+## Ticker Update Format
+
+Ticker updates contain the latest market data:
+
+```json
+{
+  "market_ticker": "KXBTC-100K-DEC31",
+  "yes_bid_uusdc": 720000,
+  "yes_ask_uusdc": 750000,
+  "no_bid_uusdc": 250000,
+  "no_ask_uusdc": 280000,
+  "last_price_uusdc": 735000,
+  "volume": 15000,
+  "open_interest": 50000
+}
+```
+
+## Response Fields
+
+<ResponseField name="market_ticker" type="string">
+  Market ticker being updated
+</ResponseField>
+
+<ResponseField name="yes_bid_uusdc" type="number" optional>
+  Best bid price for YES in µUSDC
+</ResponseField>
+
+<ResponseField name="yes_ask_uusdc" type="number" optional>
+  Best ask price for YES in µUSDC
+</ResponseField>
+
+<ResponseField name="no_bid_uusdc" type="number" optional>
+  Best bid price for NO in µUSDC
+</ResponseField>
+
+<ResponseField name="no_ask_uusdc" type="number" optional>
+  Best ask price for NO in µUSDC
+</ResponseField>
+
+<ResponseField name="last_price_uusdc" type="number" optional>
+  Last traded price in µUSDC
+</ResponseField>
+
+<ResponseField name="volume" type="number" optional>
+  Total traded volume
+</ResponseField>
+
+<ResponseField name="open_interest" type="number" optional>
+  Current open interest (outstanding contracts)
+</ResponseField>
+
+<Note>
+All price fields are in µUSDC (microUSDC). To convert to USDC: `priceUSDC = priceUusdc / 1,000,000`
+
+For example, `750000 µUSDC = 0.75 USDC` (75% probability).
+</Note>
+
+## Example: Building a Price Display
+
+```javascript
+const eventTicker = "KXBTC-100K";
+const ws = new WebSocket(
+  `wss://api.bison.markets/ws/kalshi/event/${eventTicker}`
+);
+
+// Store market data
+const markets = new Map();
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  if (data.type === "ping" || data.type === "pong") {
+    return;
+  }
+  
+  // Update market data
+  markets.set(data.market_ticker, {
+    yesBid: data.yes_bid_uusdc / 1_000_000,
+    yesAsk: data.yes_ask_uusdc / 1_000_000,
+    noBid: data.no_bid_uusdc / 1_000_000,
+    noAsk: data.no_ask_uusdc / 1_000_000,
+    lastPrice: data.last_price_uusdc / 1_000_000,
+    volume: data.volume,
+    openInterest: data.open_interest,
+  });
+  
+  // Update your UI
+  renderMarketData(data.market_ticker, markets.get(data.market_ticker));
+};
+
+function renderMarketData(ticker, data) {
+  console.log(`${ticker}:`);
+  console.log(`  YES: ${data.yesBid} bid / ${data.yesAsk} ask`);
+  console.log(`  NO:  ${data.noBid} bid / ${data.noAsk} ask`);
+  console.log(`  Last: ${data.lastPrice}, Volume: ${data.volume}`);
+}
+```
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Live Price Feeds" icon="chart-line">
+    Display real-time bid/ask spreads for markets in an event
+  </Card>
+  
+  <Card title="Trading Dashboards" icon="table">
+    Build comprehensive market overviews with live data
+  </Card>
+  
+  <Card title="Price Alerts" icon="bell">
+    Trigger notifications when prices reach certain thresholds
+  </Card>
+  
+  <Card title="Market Analytics" icon="chart-bar">
+    Track volume and liquidity changes in real-time
+  </Card>
+</CardGroup>
+

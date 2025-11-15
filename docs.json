@@ -89,7 +89,15 @@
       {
         "tab": "WebSockets",
         "pages": [
-          "websockets/introduction"
+          "websockets/introduction",
+          {
+            "group": "Messages",
+            "pages": [
+              "websockets/messages/user-events",
+              "websockets/messages/market-tickers",
+              "websockets/messages/orderbook"
+            ]
+          }
         ]
       }
     ],

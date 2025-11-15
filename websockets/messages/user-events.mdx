@@ -1,0 +1,286 @@
+---
+title: "User Events"
+description: "Real-time updates about your orders, positions, and balances"
+---
+
+## Overview
+
+Connect to receive real-time updates about your trading activity, including order status changes, position updates, and balance changes.
+
+## Connection
+
+```
+wss://api.bison.markets/ws/evm/{userAddress}
+```
+
+<ParamField path="userAddress" type="string" required>
+  Your Ethereum wallet address (with `0x` prefix)
+</ParamField>
+
+## Example Connection
+
+```javascript
+const userAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+const ws = new WebSocket(
+  `wss://api.bison.markets/ws/evm/${userAddress}`
+);
+
+ws.onopen = () => {
+  console.log("Connected to user events");
+  
+  // Send heartbeat every 30 seconds
+  setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ping" }));
+    }
+  }, 30000);
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  // Ignore ping/pong messages
+  if (data.type === "ping" || data.type === "pong") {
+    return;
+  }
+  
+  console.log("Received event:", data);
+  handleEvent(data);
+};
+
+ws.onerror = (error) => {
+  console.error("WebSocket error:", error);
+};
+
+ws.onclose = () => {
+  console.log("Connection closed");
+  // Implement reconnection logic here
+};
+```
+
+## Event Types
+
+The User Events WebSocket streams the following event types:
+
+### Order Events
+
+<Accordion title="order_placed">
+  Fired when a new order is placed.
+
+  ```json
+  {
+    "type": "order_placed",
+    "orderId": "abc123xyz",
+    "marketId": "KXBTC-100K-DEC31",
+    "action": "buy",
+    "side": "yes",
+    "number": 10,
+    "priceUusdc": 750000
+  }
+  ```
+
+  <ResponseField name="type" type="string">
+    Always `"order_placed"`
+  </ResponseField>
+  <ResponseField name="orderId" type="string">
+    Unique identifier for the order
+  </ResponseField>
+  <ResponseField name="marketId" type="string">
+    Market ticker for the order
+  </ResponseField>
+  <ResponseField name="action" type="string">
+    Either `"buy"` or `"sell"`
+  </ResponseField>
+  <ResponseField name="side" type="string">
+    Either `"yes"` or `"no"`
+  </ResponseField>
+  <ResponseField name="number" type="number">
+    Number of contracts
+  </ResponseField>
+  <ResponseField name="priceUusdc" type="number">
+    Price per contract in µUSDC (microUSDC, 6 decimals)
+  </ResponseField>
+</Accordion>
+
+<Accordion title="order_filled">
+  Fired when an order is filled (fully or partially).
+
+  ```json
+  {
+    "type": "order_filled",
+    "orderId": "abc123xyz",
+    "marketId": "KXBTC-100K-DEC31",
+    "action": "buy",
+    "side": "yes",
+    "number": 10,
+    "priceUusdc": 750000
+  }
+  ```
+
+  Fields are the same as `order_placed`.
+</Accordion>
+
+<Accordion title="order_cancelled">
+  Fired when an order is cancelled.
+
+  ```json
+  {
+    "type": "order_cancelled",
+    "orderId": "abc123xyz",
+    "marketId": "KXBTC-100K-DEC31",
+    "action": "buy",
+    "side": "yes",
+    "number": 10,
+    "priceUusdc": 750000
+  }
+  ```
+
+  Fields are the same as `order_placed`.
+</Accordion>
+
+### Market Events
+
+<Accordion title="market_opened">
+  Fired when a market opens for trading.
+
+  ```json
+  {
+    "type": "market_opened",
+    "marketId": "KXBTC-100K-DEC31"
+  }
+  ```
+
+  <ResponseField name="type" type="string">
+    Always `"market_opened"`
+  </ResponseField>
+  <ResponseField name="marketId" type="string">
+    Market ticker that opened
+  </ResponseField>
+</Accordion>
+
+<Accordion title="market_closed">
+  Fired when a market closes for trading.
+
+  ```json
+  {
+    "type": "market_closed",
+    "marketId": "KXBTC-100K-DEC31"
+  }
+  ```
+
+  Fields are the same as `market_opened`.
+</Accordion>
+
+<Accordion title="market_settled">
+  Fired when a market is settled with a final result.
+
+  ```json
+  {
+    "type": "market_settled",
+    "marketId": "KXBTC-100K-DEC31",
+    "result": "yes"
+  }
+  ```
+
+  <ResponseField name="type" type="string">
+    Always `"market_settled"`
+  </ResponseField>
+  <ResponseField name="marketId" type="string">
+    Market ticker that settled
+  </ResponseField>
+  <ResponseField name="result" type="string">
+    Settlement result: `"yes"` or `"no"`
+  </ResponseField>
+</Accordion>
+
+### Balance Events
+
+<Accordion title="usdc_deposited">
+  Fired when USDC is deposited into your Bison account.
+
+  ```json
+  {
+    "type": "usdc_deposited",
+    "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "uusdcAmount": 1000000,
+    "newBalanceUusdc": 5000000
+  }
+  ```
+
+  <ResponseField name="type" type="string">
+    Always `"usdc_deposited"`
+  </ResponseField>
+  <ResponseField name="userAddress" type="string">
+    Your Ethereum address
+  </ResponseField>
+  <ResponseField name="uusdcAmount" type="number">
+    Amount deposited in µUSDC (1 USDC = 1,000,000 µUSDC)
+  </ResponseField>
+  <ResponseField name="newBalanceUusdc" type="number">
+    Your new total balance in µUSDC
+  </ResponseField>
+</Accordion>
+
+<Accordion title="usdc_withdrawn">
+  Fired when USDC is withdrawn from your Bison account.
+
+  ```json
+  {
+    "type": "usdc_withdrawn",
+    "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "uusdcAmount": 500000,
+    "newBalanceUusdc": 4500000
+  }
+  ```
+
+  Fields are the same as `usdc_deposited`.
+</Accordion>
+
+### Position Events
+
+<Accordion title="position_minted">
+  Fired when you mint new position tokens.
+
+  ```json
+  {
+    "type": "position_minted",
+    "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "marketId": "KXBTC-100K-DEC31",
+    "side": "yes",
+    "number": 10
+  }
+  ```
+
+  <ResponseField name="type" type="string">
+    Always `"position_minted"`
+  </ResponseField>
+  <ResponseField name="userAddress" type="string">
+    Your Ethereum address
+  </ResponseField>
+  <ResponseField name="marketId" type="string">
+    Market ticker for the position
+  </ResponseField>
+  <ResponseField name="side" type="string">
+    Position side: `"yes"` or `"no"`
+  </ResponseField>
+  <ResponseField name="number" type="number">
+    Number of position tokens minted
+  </ResponseField>
+</Accordion>
+
+<Accordion title="position_burned">
+  Fired when you burn position tokens.
+
+  ```json
+  {
+    "type": "position_burned",
+    "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "marketId": "KXBTC-100K-DEC31",
+    "side": "yes",
+    "number": 5
+  }
+  ```
+
+  Fields are the same as `position_minted`.
+</Accordion>
+

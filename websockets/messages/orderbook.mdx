@@ -1,0 +1,349 @@
+---
+title: "Orderbook Data"
+description: "Real-time orderbook snapshots and deltas for a specific market"
+---
+
+## Overview
+
+Connect to receive real-time orderbook data for a specific market, including initial snapshots and incremental updates.
+
+## Connection
+
+```
+wss://api.bison.markets/ws/kalshi/orderbook/{marketTicker}
+```
+
+<ParamField path="marketTicker" type="string" required>
+  The Kalshi market ticker (e.g., `KXBTC-100K-DEC31`)
+</ParamField>
+
+## Example Connection
+
+```javascript
+const marketTicker = "KXBTC-100K-DEC31";
+const ws = new WebSocket(
+  `wss://api.bison.markets/ws/kalshi/orderbook/${marketTicker}`
+);
+
+// Track orderbook state
+let orderbook = {
+  yes: new Map(), // price_uusdc -> quantity
+  no: new Map()   // price_uusdc -> quantity
+};
+
+ws.onopen = () => {
+  console.log(`Connected to ${marketTicker} orderbook`);
+  
+  // Send heartbeat every 30 seconds
+  setInterval(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "ping" }));
+    }
+  }, 30000);
+};
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  
+  if (data.type === "orderbook_snapshot") {
+    handleSnapshot(data);
+  } else if (data.type === "orderbook_delta") {
+    handleDelta(data);
+  }
+};
+
+function handleSnapshot(snapshot) {
+  // Reset orderbook with full snapshot
+  orderbook.yes.clear();
+  orderbook.no.clear();
+  
+  if (snapshot.yes) {
+    snapshot.yes.forEach(level => {
+      orderbook.yes.set(level.price_uusdc, level.quantity);
+    });
+  }
+  
+  if (snapshot.no) {
+    snapshot.no.forEach(level => {
+      orderbook.no.set(level.price_uusdc, level.quantity);
+    });
+  }
+  
+  console.log("Orderbook initialized:", orderbook);
+}
+
+function handleDelta(delta) {
+  // Apply incremental update
+  const book = delta.side === "yes" ? orderbook.yes : orderbook.no;
+  const currentQty = book.get(delta.price_uusdc) || 0;
+  const newQty = currentQty + delta.delta;
+  
+  if (newQty <= 0) {
+    book.delete(delta.price_uusdc);
+  } else {
+    book.set(delta.price_uusdc, newQty);
+  }
+  
+  console.log(`Orderbook updated: ${delta.side} @ ${delta.price_uusdc}: ${newQty}`);
+}
+```
+
+## Message Types
+
+The Orderbook WebSocket sends two types of messages:
+
+### Snapshot Message
+
+Sent immediately upon connection, providing the complete current orderbook state.
+
+```json
+{
+  "type": "orderbook_snapshot",
+  "market_ticker": "KXBTC-100K-DEC31",
+  "yes": [
+    { "price_uusdc": 750000, "quantity": 100 },
+    { "price_uusdc": 740000, "quantity": 250 },
+    { "price_uusdc": 730000, "quantity": 500 }
+  ],
+  "no": [
+    { "price_uusdc": 260000, "quantity": 150 },
+    { "price_uusdc": 270000, "quantity": 300 },
+    { "price_uusdc": 280000, "quantity": 400 }
+  ]
+}
+```
+
+<ResponseField name="type" type="string">
+  Always `"orderbook_snapshot"`
+</ResponseField>
+
+<ResponseField name="market_ticker" type="string">
+  Market ticker for this orderbook
+</ResponseField>
+
+<ResponseField name="yes" type="array" optional>
+  Array of YES side price levels, ordered by price
+  
+  <Expandable title="Level Object">
+    <ResponseField name="price_uusdc" type="number">
+      Price level in µUSDC
+    </ResponseField>
+    <ResponseField name="quantity" type="number">
+      Total quantity available at this price
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="no" type="array" optional>
+  Array of NO side price levels, ordered by price
+  
+  Structure is the same as `yes` array.
+</ResponseField>
+
+### Delta Message
+
+Sent for each orderbook change, providing an incremental update.
+
+```json
+{
+  "type": "orderbook_delta",
+  "market_ticker": "KXBTC-100K-DEC31",
+  "side": "yes",
+  "price_uusdc": 750000,
+  "delta": 50
+}
+```
+
+<ResponseField name="type" type="string">
+  Always `"orderbook_delta"`
+</ResponseField>
+
+<ResponseField name="market_ticker" type="string">
+  Market ticker for this update
+</ResponseField>
+
+<ResponseField name="side" type="string">
+  Either `"yes"` or `"no"`
+</ResponseField>
+
+<ResponseField name="price_uusdc" type="number">
+  Price level being updated
+</ResponseField>
+
+<ResponseField name="delta" type="number">
+  Change in quantity (positive for additions, negative for removals)
+</ResponseField>
+
+## Maintaining Accurate State
+
+<Note>
+To maintain an accurate orderbook:
+1. Initialize with the snapshot on connection
+2. Apply each delta by adding it to the current quantity at that price level
+3. Remove price levels when their quantity reaches zero or below
+</Note>
+
+## Example: Orderbook Display
+
+```javascript
+class OrderbookManager {
+  constructor(marketTicker) {
+    this.marketTicker = marketTicker;
+    this.orderbook = {
+      yes: new Map(),
+      no: new Map()
+    };
+    this.ws = null;
+  }
+  
+  connect() {
+    this.ws = new WebSocket(
+      `wss://api.bison.markets/ws/kalshi/orderbook/${this.marketTicker}`
+    );
+    
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      
+      if (data.type === "orderbook_snapshot") {
+        this.applySnapshot(data);
+      } else if (data.type === "orderbook_delta") {
+        this.applyDelta(data);
+      }
+    };
+    
+    // Heartbeat
+    setInterval(() => {
+      if (this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30000);
+  }
+  
+  applySnapshot(snapshot) {
+    this.orderbook.yes.clear();
+    this.orderbook.no.clear();
+    
+    if (snapshot.yes) {
+      snapshot.yes.forEach(level => {
+        this.orderbook.yes.set(level.price_uusdc, level.quantity);
+      });
+    }
+    
+    if (snapshot.no) {
+      snapshot.no.forEach(level => {
+        this.orderbook.no.set(level.price_uusdc, level.quantity);
+      });
+    }
+    
+    this.render();
+  }
+  
+  applyDelta(delta) {
+    const book = delta.side === "yes" ? this.orderbook.yes : this.orderbook.no;
+    const currentQty = book.get(delta.price_uusdc) || 0;
+    const newQty = currentQty + delta.delta;
+    
+    if (newQty <= 0) {
+      book.delete(delta.price_uusdc);
+    } else {
+      book.set(delta.price_uusdc, newQty);
+    }
+    
+    this.render();
+  }
+  
+  render() {
+    console.log(`\n=== ${this.marketTicker} Orderbook ===`);
+    
+    // YES side (sorted descending by price)
+    console.log("\nYES:");
+    const yesPrices = Array.from(this.orderbook.yes.keys()).sort((a, b) => b - a);
+    yesPrices.forEach(price => {
+      const qty = this.orderbook.yes.get(price);
+      const priceUSDC = (price / 1_000_000).toFixed(2);
+      console.log(`  ${priceUSDC}: ${qty} contracts`);
+    });
+    
+    // NO side (sorted descending by price)
+    console.log("\nNO:");
+    const noPrices = Array.from(this.orderbook.no.keys()).sort((a, b) => b - a);
+    noPrices.forEach(price => {
+      const qty = this.orderbook.no.get(price);
+      const priceUSDC = (price / 1_000_000).toFixed(2);
+      console.log(`  ${priceUSDC}: ${qty} contracts`);
+    });
+  }
+  
+  getBestBidAsk() {
+    const yesPrices = Array.from(this.orderbook.yes.keys());
+    const noPrices = Array.from(this.orderbook.no.keys());
+    
+    return {
+      yesBid: yesPrices.length > 0 ? Math.max(...yesPrices) : null,
+      yesAsk: yesPrices.length > 0 ? Math.min(...yesPrices) : null,
+      noBid: noPrices.length > 0 ? Math.max(...noPrices) : null,
+      noAsk: noPrices.length > 0 ? Math.min(...noPrices) : null,
+    };
+  }
+  
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+    }
+  }
+}
+
+// Usage
+const manager = new OrderbookManager("KXBTC-100K-DEC31");
+manager.connect();
+
+// Later, get best bid/ask
+const { yesBid, yesAsk, noBid, noAsk } = manager.getBestBidAsk();
+console.log(`Best YES: ${yesBid} / ${yesAsk}`);
+console.log(`Best NO: ${noBid} / ${noAsk}`);
+```
+
+## Use Cases
+
+<CardGroup cols={2}>
+  <Card title="Order Book Depth" icon="layer-group">
+    Display full market depth with all price levels
+  </Card>
+  
+  <Card title="Trading Interfaces" icon="chart-candlestick">
+    Build professional trading UIs with real-time order flow
+  </Card>
+  
+  <Card title="Market Making" icon="robot">
+    Monitor liquidity for algorithmic trading strategies
+  </Card>
+  
+  <Card title="Price Discovery" icon="magnifying-glass">
+    Analyze order book imbalances and market sentiment
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<Steps>
+  <Step title="Initialize with Snapshot">
+    Always start by processing the initial snapshot message to establish baseline state.
+  </Step>
+  
+  <Step title="Apply Deltas Incrementally">
+    Add delta values to existing quantities rather than replacing them.
+  </Step>
+  
+  <Step title="Clean Up Zero Quantities">
+    Remove price levels from your orderbook when their quantity reaches zero or below.
+  </Step>
+  
+  <Step title="Sort Price Levels">
+    Sort bids descending and asks ascending for proper display.
+  </Step>
+  
+  <Step title="Handle Reconnection">
+    On reconnection, the snapshot will reset your state automatically.
+  </Step>
+</Steps>
+
