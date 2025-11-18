@@ -3,6 +3,8 @@ title: "Market Tickers"
 description: "Stream live market data for all markets in an event"
 ---
 
+import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+
 ## Overview
 
 Connect to receive real-time market data for all markets within a specific event, including bid/ask prices, volume, and open interest.
@@ -100,11 +102,7 @@ Ticker updates contain the latest market data:
   Current open interest (outstanding contracts)
 </ResponseField>
 
-<Note>
-All price fields are in µUSDC (microUSDC). To convert to USDC: `priceUSDC = priceUusdc / 1,000,000`
-
-For example, `750000 µUSDC = 0.75 USDC` (75% probability).
-</Note>
+<UusdcExplanation />
 
 ## Example: Building a Price Display
 

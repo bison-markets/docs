@@ -3,9 +3,13 @@ title: 'Authorize Withdraw'
 openapi: 'POST /get-withdraw-authorization'
 ---
 
+import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+
 ## Overview
 
 Generate a signed authorization to withdraw USDC from the vault. The authorization is valid for 30 seconds and can only be used once.
+
+<UusdcExplanation />
 
 ## Request Body
 
