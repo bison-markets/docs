@@ -16,6 +16,49 @@ The SDK provides high-level methods for trading on Kalshi markets:
 
 <UusdcExplanation />
 
+## Developer Accounts
+
+If you have a developer account, you can set it at the client level to automatically apply it to all orders:
+
+```typescript
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets',
+  devAccountId: 'your-dev-account-id'
+});
+
+// All orders automatically include your dev account ID
+await client.executeBuyFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'yes',
+  number: 10,
+  priceUusdc: 650000,
+});
+```
+
+You can also override the dev account for specific orders when using the lower-level `placeOrder` method:
+
+```typescript
+await client.placeOrder({
+  chain: 'base',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  number: 10,
+  priceUusdc: 650000,
+  action: 'buy',
+  side: 'yes',
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  signature: '0x...',
+  expiry: 1234567890,
+  devAccountId: 'different-dev-account' // Overrides client default
+});
+```
+
+See the [Developer Accounts](/general/dev-accounts) guide for more information on how to get a dev account and earn from trading fees.
+
+
 ## Placing Orders
 
 Place limit orders on Kalshi markets. The SDK handles EIP-712 signature generation automatically.
@@ -213,75 +256,6 @@ await client.executeCancelOrderFlow({
 console.log('Order cancellation requested');
 ```
 
-## Minting & Burning Positions
-
-Create or destroy position tokens directly on-chain.
-
-### `executeMintFlow`
-
-Mint new position tokens by locking USDC in the vault.
-
-```typescript
-async executeMintFlow(params: {
-  walletClient: WalletClient;
-  publicClient: PublicClient;
-  userAddress: `0x${string}`;
-  chain: string;
-  marketId: string;
-  side: 'yes' | 'no';
-  number: number;
-}): Promise<{ txHash: `0x${string}` }>
-```
-
-#### Example
-
-```typescript
-// Mint 20 YES tokens for a market
-const result = await client.executeMintFlow({
-  walletClient,
-  publicClient,
-  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  chain: 'base',
-  marketId: 'KXFEDDECISION-26JAN-T425',
-  side: 'yes',
-  number: 20,
-});
-
-console.log('Tokens minted! Transaction:', result.txHash);
-```
-
-### `executeBurnFlow`
-
-Burn position tokens to unlock USDC from the vault.
-
-```typescript
-async executeBurnFlow(params: {
-  walletClient: WalletClient;
-  publicClient: PublicClient;
-  userAddress: `0x${string}`;
-  chain: string;
-  marketId: string;
-  side: 'yes' | 'no';
-  number: number;
-}): Promise<{ txHash: `0x${string}` }>
-```
-
-#### Example
-
-```typescript
-// Burn 15 NO tokens
-const result = await client.executeBurnFlow({
-  walletClient,
-  publicClient,
-  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  chain: 'base',
-  marketId: 'KXFEDDECISION-26JAN-T425',
-  side: 'no',
-  number: 15,
-});
-
-console.log('Tokens burned! Transaction:', result.txHash);
-```
 
 ## Querying Orders & Positions
 
@@ -437,9 +411,10 @@ try {
 
 - All order prices are in µUSDC (1 USD = 1,000,000 µUSDC, so $0.65 = 650000 µUSDC)
 - Order signatures expire after 10 minutes
-- Minting requires sufficient deposited USDC in the vault
-- Burning requires holding the position tokens
+- Minting withdraws positions from the exchange to your wallet as ERC-20 tokens
+- Burning deposits ERC-20 tokens from your wallet back to the exchange as tradeable positions
 - The SDK automatically handles EIP-712 signature generation
 - WebSocket connection is automatically established for buy/sell flows
 - Always call `disconnect()` to clean up WebSocket connections
+- Developer account IDs set at the client level are automatically applied to all orders
 

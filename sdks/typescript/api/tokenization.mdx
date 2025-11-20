@@ -1,0 +1,72 @@
+---
+title: "Tokenization"
+description: "Tokenizing market positions on-chain"
+---
+
+The SDK provides methods to mint and positions as tokens directly on-chain as ERC20 tokens.
+
+### `executeMintFlow`
+
+Withdraw position tokens from the exchange to your wallet as ERC-20 tokens.
+
+```typescript
+async executeMintFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+}): Promise<{ txHash: `0x${string}` }>
+```
+
+#### Example
+
+```typescript
+// Withdraw 20 YES position tokens from exchange to wallet
+const result = await client.executeMintFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'yes',
+  number: 20,
+});
+
+console.log('Tokens minted! Transaction:', result.txHash);
+```
+
+### `executeBurnFlow`
+
+Deposit position tokens from your wallet back to the exchange as tradeable positions.
+
+```typescript
+async executeBurnFlow(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+  userAddress: `0x${string}`;
+  chain: string;
+  marketId: string;
+  side: 'yes' | 'no';
+  number: number;
+}): Promise<{ txHash: `0x${string}` }>
+```
+
+#### Example
+
+```typescript
+// Deposit 15 NO position tokens from wallet back to exchange
+const result = await client.executeBurnFlow({
+  walletClient,
+  publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  marketId: 'KXFEDDECISION-26JAN-T425',
+  side: 'no',
+  number: 15,
+});
+
+console.log('Tokens burned! Transaction:', result.txHash);
+```

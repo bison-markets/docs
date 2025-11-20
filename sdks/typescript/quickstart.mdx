@@ -39,7 +39,7 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-// Deposit 100 USDC into the vault
+// Deposit 100 USDC
 const txHash = await client.executeDepositFlow({
   walletClient,
   publicClient,
@@ -75,5 +75,18 @@ const client = createBisonClient({
   baseUrl: 'https://api.bison.markets' 
 });
 ```
+
+### Developer Accounts
+
+If you have a developer account, you can set it at the client level to automatically apply it to all orders:
+
+```typescript
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets',
+  devAccountId: 'your-dev-account-id'
+});
+```
+
+All orders placed through this client will be associated with your dev account, allowing you to earn a portion of trading fees. See the [Developer Accounts](/general/dev-accounts) guide for more information on how to get a dev account and configure fee structures.
 
 You can find detailed usage information on the next few pages.

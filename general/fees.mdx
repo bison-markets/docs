@@ -1,0 +1,53 @@
+---
+title: 'Fee Structure'
+description: 'Understanding trading fees on Bison'
+---
+
+import BisonFee from '/snippets/bison-fee.mdx';
+
+## Overview
+
+Bison charges fees on successful trades and passes on the majority to the developer. Fees are charged whenever orders are filled.
+
+## Fee Calculation
+
+When an order is filled, fees are calculated based on the dev account associated with the order. If no dev account is specified, no fees are charged.
+
+### Gross Fee
+
+The gross fee collected is calculated as:
+
+$$
+\mathrm{GrossFeeAmount} = \max \left( \mathrm{GrossBaseFee}, \left\lfloor \mathrm{TradeAmount} \times \frac{\mathrm{GrossFeeBps}}{10{,}000} \right\rfloor \right)
+$$
+
+Where:
+- **GrossBaseFee** is the minimum fee in µUSDC (micro-USDC, where 1 USDC = 1,000,000 µUSDC)
+- **GrossFeeBps** is the fee rate in basis points (1 bps = 0.01%)
+- **TradeAmount** is the trade amount in µUSDC
+
+The gross fee is the maximum of:
+1. The base fee (minimum fee regardless of trade size)
+2. The percentage-based fee calculated from the trade amount
+
+### Fee Distribution
+
+The gross fee is then split between the developer and Bison:
+
+$$
+\begin{align*}
+\mathrm{BisonFeeAmount} &= \left\lfloor \mathrm{GrossFee} \times \frac{\mathrm{BisonFeeCutBps}}{10{,}000} \right\rfloor
+\\
+\mathrm{DevFeeAmount} &= \mathrm{GrossFee} - \mathrm{BisonFee}
+\end{align*}
+$$
+
+Where **BisonFeeCutBps** determines Bison's share of the gross fee in basis points.
+
+<BisonFee />
+
+## Defaults
+
+Dev accounts default to the following fee structure:
+- **GrossBaseFee**: 100,000 µUSDC ($0.10)
+- **GrossFeeBps**: 100 (1%)

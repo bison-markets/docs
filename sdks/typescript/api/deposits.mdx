@@ -7,14 +7,14 @@ import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
 
 ## Overview
 
-The SDK provides `executeDepositFlow` and `executeWithdrawFlow`, and `getDepositedUsdcBalance` methods to deposit and withdraw USDC from the Bison vault
-on a given chain. These methods handle all the necessary steps including asking for approvals and authorization signatures.
+The SDK provides `executeDepositFlow` and `executeWithdrawFlow`, and `getDepositedUsdcBalance` methods to deposit and withdraw USDC for trading on Bison. 
+These methods handle all the necessary steps including asking for approvals and authorization signatures.
 
 <UusdcExplanation />
 
 ## Depositing USDC
 
-Deposit USDC into the vault to enable trading on Kalshi markets.
+Deposit USDC to enable trading on Kalshi markets.
 
 ### `executeDepositFlow`
 
@@ -90,7 +90,7 @@ console.log('Deposited! Transaction:', txHash);
 
 ## Withdrawing USDC
 
-Withdraw USDC from your deposited balance in the vault.
+Withdraw USDC from your deposited balance.
 
 ### `executeWithdrawFlow`
 

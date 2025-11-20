@@ -1,3 +1,23 @@
+/* Load KaTeX from reliable CDN to avoid CloudFront 403 errors */
+@import url('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css');
+
+/* Fix math block vertical overflow */
+.katex-display,
+.math-display,
+[class*="math"] {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+.katex-display > .katex,
+.math-display > .katex {
+  overflow: visible !important;
+}
+
+div:has(> .katex-display) {
+  overflow: visible !important;
+}
+
 /* GET */
 .mintlify-http-method-get {
   background-color: #0ea5e9 !important;

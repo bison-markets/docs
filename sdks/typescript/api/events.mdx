@@ -1,5 +1,5 @@
 ---
-title: "Events"
+title: "Event Streaming"
 description: "Real-time event streaming with WebSockets"
 ---
 
@@ -76,8 +76,8 @@ The callback receives one of the following event types:
 - `order_cancelled` - Order cancelled
 
 **Position Events:**
-- `position_minted` - New position tokens created
-- `position_burned` - Position tokens destroyed
+- `position_minted` - Position tokens withdrawn from exchange to wallet
+- `position_burned` - Position tokens deposited from wallet back to exchange
 
 **USDC Events:**
 - `usdc_deposited` - USDC deposited to vault
@@ -121,7 +121,7 @@ const disconnect = client.listen(
         break;
       
       case 'position_minted':
-        console.log(`Minted ${event.number} ${event.side} tokens for ${event.marketId}`);
+        console.log(`Withdrew ${event.number} ${event.side} tokens for ${event.marketId} to wallet`);
         break;
       
       case 'market_settled':
