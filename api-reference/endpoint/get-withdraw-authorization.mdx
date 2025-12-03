@@ -7,14 +7,25 @@ import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
 
 ## Overview
 
-Generate a signed authorization to withdraw USDC from the vault. The authorization is valid for 30 seconds and can only be used once.
+Generate a signed authorization to claim scheduled withdrawals from the vault. This is step 2 of the two-phase withdrawal process.
+
+The authorization is valid for 30 seconds and can only be used once. It allows the user to claim up to their total unclaimed withdrawal amount.
 
 <UusdcExplanation />
+
+## Withdrawal Flow
+
+Bison uses a two-phase withdrawal process:
+
+1. **Schedule** (`/schedule-withdraw`): User signs a message to request a withdrawal for a specific amount
+2. **Claim** (`/get-withdraw-authorization` + on-chain tx): User gets authorization and executes the withdrawal on-chain
+
+This endpoint handles step 2 - generating the authorization signature for claiming.
 
 ## Request Body
 
 <ParamField path="chain" type="string" required>
-  Chain to execute the withdrawal on. Currently only `base` is supported.
+  Chain to claim withdrawals on. One of `base` or `bsc`.
 </ParamField>
 
 <ParamField path="userAddress" type="string" required>
@@ -36,17 +47,27 @@ Generate a signed authorization to withdraw USDC from the vault. The authorizati
 </ResponseField>
 
 <ResponseField name="maxWithdrawAmount" type="number">
-  Maximum amount the user can withdraw in µUSDC. This equals the user's current deposited balance.
+  Total amount available to claim in µUSDC. This is the sum of all unclaimed scheduled withdrawals.
 </ResponseField>
 
 ## Error Responses
 
-<ResponseField name="400 - No Balance">
-  Returned when the user has no deposited balance to withdraw.
+<ResponseField name="400 - No Withdrawals">
+  Returned when the user has no unclaimed withdrawals available.
   
   ```json
   {
-    "error": "No deposited balance to withdraw"
+    "error": "No unclaimed withdrawals available"
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="400 - Pending Signature">
+  Returned when the user already has an unexpired claim authorization.
+  
+  ```json
+  {
+    "error": "You already have a pending withdrawal signature. Please use it or wait for expiry."
   }
   ```
 </ResponseField>
@@ -83,19 +104,22 @@ Generate a signed authorization to withdraw USDC from the vault. The authorizati
 
 ## Usage Flow
 
-1. **Check Balance**: Ensure user has deposited USDC balance
-2. **Get Authorization**: Call this endpoint to get withdrawal signature
-3. **Execute Withdrawal**: Call `withdrawUSDC` on the vault contract with the authorization:
+1. **Schedule Withdrawals**: Use `/schedule-withdraw` to request withdrawal(s)
+2. **Check Status**: Use `/pending-withdraws/{userAddress}` to see when withdrawals become `unclaimed`
+3. **Get Authorization**: Call this endpoint to get claim signature
+4. **Execute Claim**: Call `withdrawUSDC` on the vault contract with:
    - `uuid`: Unique authorization ID
    - `usdcAmount`: Amount to withdraw (≤ maxWithdrawAmount)
+   - `userAddress`: User's wallet address
    - `expiry`: Expiration timestamp
    - `signature`: EIP-712 signature
 
 ## Important Notes
 
 - Authorization expires in 30 seconds
-- Each authorization can only be used once (replay protection)
-- User must have sufficient deposited balance
-- Withdraw amount in contract call must not exceed `maxWithdrawAmount`
-- After withdrawal, the user's deposited balance is updated via EVM webhook
+- Each authorization can only be used once (replay protection via claim locks)
+- User must have scheduled withdrawals in `unclaimed` status
+- Multiple scheduled withdrawals are batched into a single claim
+- Partial claims are supported - withdraw any amount up to `maxWithdrawAmount`
+- After claiming, the user receives USDC directly to their wallet
 

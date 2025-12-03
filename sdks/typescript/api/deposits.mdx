@@ -7,8 +7,13 @@ import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
 
 ## Overview
 
-The SDK provides `executeDepositFlow` and `executeWithdrawFlow`, and `getDepositedUsdcBalance` methods to deposit and withdraw USDC for trading on Bison. 
-These methods handle all the necessary steps including asking for approvals and authorization signatures.
+The SDK provides deposit and withdrawal methods for managing USDC on Bison:
+
+- **Deposits**: Use `executeDepositFlow` to deposit USDC instantly
+- **Withdrawals**: Use a two-step process with `scheduleWithdraw` and `claimWithdraw` to request and claim withdrawals
+- **Balance Checking**: Use `getDepositedUsdcBalance` to check your available balance
+
+These methods handle all the necessary steps including approvals and authorization signatures.
 
 <UusdcExplanation />
 
@@ -90,17 +95,120 @@ console.log('Deposited! Transaction:', txHash);
 
 ## Withdrawing USDC
 
-Withdraw USDC from your deposited balance.
+Withdrawals use a two-step process for security and efficiency:
 
-### `executeWithdrawFlow`
+1. **Schedule**: Request a withdrawal with `scheduleWithdraw` (no gas required, just a signature)
+2. **Claim**: Execute the withdrawal on-chain with `claimWithdraw` (requires gas)
+
+This approach allows the system to batch and optimize withdrawal processing.
+
+### `scheduleWithdraw`
+
+Schedules a withdrawal request. This method requires only a signature and does not consume gas.
 
 ```typescript
-async executeWithdrawFlow(params: {
+async scheduleWithdraw(params: {
+  walletClient: WalletClient;
+  userAddress: `0x${string}`;
+  chain: 'base';
+  amountUusdc: number;
+}): Promise<{
+  withdrawId: string;
+  amountUusdc: number;
+  status: 'pending' | 'fill-locked' | 'unclaimed' | 'claimed';
+  scheduledAt: string;
+}>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing the withdrawal request
+</ParamField>
+
+<ParamField path="userAddress" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="chain" type="string" required>
+  Chain identifier (currently only `"base"` is supported)
+</ParamField>
+
+<ParamField path="amountUusdc" type="number" required>
+  Amount in µUSDC (e.g., 50_000_000 for 50 USDC). Must not exceed your deposited balance.
+</ParamField>
+
+#### Returns
+
+Withdrawal details including the unique `withdrawId` and current status.
+
+#### Example
+
+```typescript
+// Step 1: Schedule a withdrawal (no gas required)
+const withdrawal = await client.scheduleWithdraw({
+  walletClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+  amountUusdc: 50_000_000, // 50 USDC
+});
+
+console.log('Withdrawal scheduled:', withdrawal.withdrawId);
+console.log('Status:', withdrawal.status); // "pending"
+// Expected output: 
+// "Withdrawal scheduled: 550e8400-e29b-41d4-a716-446655440000"
+// "Status: pending"
+```
+
+### `getPendingWithdraws`
+
+Get all pending withdrawals for a user.
+
+```typescript
+async getPendingWithdraws(params: {
+  userAddress: `0x${string}`;
+}): Promise<{
+  withdraws: Array<{
+    id: string;
+    chain: 'base' | 'bsc';
+    amountUusdc: number;
+    claimedAmountUusdc: number;
+    remainingUusdc: number;
+    status: 'pending' | 'fill-locked' | 'unclaimed' | 'claimed';
+    scheduledAt: string;
+    lockedAt: string | null;
+    unclaimedAt: string | null;
+  }>;
+  totalPending: number;
+  totalFillLocked: number;
+  totalUnclaimed: number;
+  totalAvailableUnclaimed: number;
+}>
+```
+
+#### Example
+
+```typescript
+const withdrawals = await client.getPendingWithdraws({
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+});
+
+console.log(`Total unclaimed: ${withdrawals.totalAvailableUnclaimed / 1_000_000} USDC`);
+withdrawals.withdraws.forEach(w => {
+  console.log(`${w.id}: ${w.status} - ${w.amountUusdc / 1_000_000} USDC`);
+});
+```
+
+### `claimWithdraw`
+
+Claim all available withdrawals on-chain. This method executes a blockchain transaction and requires gas.
+
+```typescript
+async claimWithdraw(params: {
   walletClient: WalletClient;
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: 'base';
-  amountUusdc: number;
 }): Promise<`0x${string}`>
 ```
 
@@ -119,31 +227,60 @@ async executeWithdrawFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
-</ParamField>
-
-<ParamField path="amountUusdc" type="number" required>
-  Amount in µUSDC (e.g., 50_000_000 for 50 USDC). Must not exceed your deposited balance.
+  Chain identifier (currently only `"base"` is supported)
 </ParamField>
 
 #### Returns
 
-Transaction hash of the withdrawal transaction.
+Transaction hash of the withdrawal claim transaction.
 
 #### Example
 
 ```typescript
-// Withdraw 50 USDC
-const txHash = await client.executeWithdrawFlow({
+// Step 2: Claim the withdrawal (requires gas)
+const txHash = await client.claimWithdraw({
   walletClient,
   publicClient,
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  chain: 'base',
+});
+
+console.log('Withdrawal claimed! Transaction:', txHash);
+// Expected output: "Withdrawal claimed! Transaction: 0xdef456..."
+```
+
+### Complete Withdrawal Example
+
+```typescript
+// Schedule a withdrawal
+const withdrawal = await client.scheduleWithdraw({
+  walletClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
   amountUusdc: 50_000_000, // 50 USDC
 });
 
-console.log('Withdrawn! Transaction:', txHash);
-// Expected output: "Withdrawn! Transaction: 0xdef456..."
+console.log('Withdrawal scheduled with ID:', withdrawal.withdrawId);
+
+// Wait for the withdrawal to be processed (status changes to 'unclaimed')
+// This typically happens when the system batches and processes withdrawals
+
+// Check pending withdrawals
+const pending = await client.getPendingWithdraws({
+  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+});
+
+if (pending.totalAvailableUnclaimed > 0) {
+  // Claim all available withdrawals
+  const txHash = await client.claimWithdraw({
+    walletClient,
+    publicClient,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    chain: 'base',
+  });
+  
+  console.log('Successfully claimed withdrawals:', txHash);
+}
 ```
 
 ## Checking Balance
@@ -177,7 +314,7 @@ For advanced use cases, you can use the low-level authorization methods:
 
 ### `getWithdrawAuthorization`
 
-Get a signed authorization for withdrawing USDC:
+Get a signed authorization for claiming withdrawals. This is used internally by `claimWithdraw`, but you can call it directly for custom implementations:
 
 ```typescript
 async getWithdrawAuthorization(options: {
@@ -194,32 +331,34 @@ async getWithdrawAuthorization(options: {
 #### Example
 
 ```typescript
-import { parseUnits } from 'viem';
 import { VAULT_ABI } from 'bison-sdk-ts';
+
+const userAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 
 const auth = await client.getWithdrawAuthorization({
   chain: 'base',
-  userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  userAddress,
 });
 
-console.log('Max withdraw amount:', auth.maxWithdrawAmount / 1_000_000, 'USDC');
+console.log('Max claimable amount:', auth.maxWithdrawAmount / 1_000_000, 'USDC');
 console.log('Expires at:', new Date(auth.expiresAt * 1000));
 // Expected output:
-// "Max withdraw amount: 100 USDC"
+// "Max claimable amount: 50 USDC"
 // "Expires at: 2024-12-31T12:34:56.000Z"
 
 // Use the authorization with the vault contract
 const txHash = await walletClient.writeContract({
-  address: '0x1234567890123456789012345678901234567890',
+  address: vaultAddress,
   abi: VAULT_ABI,
   functionName: 'withdrawUSDC',
   args: [
     auth.uuid,
-    parseUnits('50', 6), // Amount in wei (6 decimals for USDC)
+    BigInt(auth.maxWithdrawAmount),
+    userAddress,
     BigInt(auth.expiresAt),
-    auth.signature,
+    auth.signature as `0x${string}`,
   ],
-  account: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  account: userAddress,
 });
 
 console.log('Withdrawal transaction:', txHash);
@@ -261,30 +400,50 @@ try {
 ### Withdrawal Error Handling
 
 ```typescript
+// Scheduling errors
 try {
-  const txHash = await client.executeWithdrawFlow({
+  const withdrawal = await client.scheduleWithdraw({
+    walletClient,
+    userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    chain: 'base',
+    amountUusdc: 50_000_000,
+  });
+  console.log('Scheduled:', withdrawal.withdrawId);
+} catch (error) {
+  if (error instanceof Error) {
+    if (error.message.includes('Insufficient balance')) {
+      // Requested amount is more than available balance
+      const balance = await client.getDepositedUsdcBalance(userAddress);
+      const maxAmount = balance.depositedBalanceUusdc / 1_000_000;
+      console.log(`Maximum withdrawable: ${maxAmount} USDC`);
+    } else if (error.message.includes('Signature expired')) {
+      console.error('Signature expired, please retry');
+    } else if (error.message.includes('Invalid signature')) {
+      console.error('Signature verification failed');
+    } else {
+      console.error('Schedule failed:', error.message);
+    }
+  }
+}
+
+// Claiming errors
+try {
+  const txHash = await client.claimWithdraw({
     walletClient,
     publicClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     chain: 'base',
-    amountUusdc: 50_000_000, // 50 USDC
   });
-  console.log('Withdrawn:', txHash);
+  console.log('Claimed:', txHash);
 } catch (error) {
   if (error instanceof Error) {
-    if (error.message.includes('exceeds maximum')) {
-      // Requested amount is more than available balance
-      console.error('Insufficient deposited balance');
-      
-      // Get actual balance
-      const balance = await client.getDepositedUsdcBalance(userAddress);
-      const maxAmount = balance.depositedBalanceUusdc / 1_000_000;
-      console.log(`Maximum withdrawable: ${maxAmount} USDC`);
-    } else if (error.message.includes('expired')) {
-      console.error('Authorization expired, retrying...');
-      // Retry the withdrawal
+    if (error.message.includes('No unclaimed withdrawals')) {
+      console.error('No withdrawals ready to claim yet');
+      // Check status with getPendingWithdraws
+    } else if (error.message.includes('User rejected')) {
+      console.error('User cancelled transaction');
     } else {
-      console.error('Withdrawal failed:', error.message);
+      console.error('Claim failed:', error.message);
     }
   }
 }
@@ -292,11 +451,20 @@ try {
 
 ## Important Notes
 
-- Withdraw authorizations expire after 30 seconds
-- Each authorization can only be used once (replay protection)
-- You can only withdraw up to your deposited balance minus any active positions
-- After deposits/withdrawals, balances update automatically via blockchain events
+### Withdrawals
+- Withdrawals use a two-step process: schedule then claim
+- `scheduleWithdraw` only requires a signature (no gas)
+- `claimWithdraw` executes the on-chain transaction (requires gas)
+- Withdrawal status transitions: `pending` → `fill-locked` → `unclaimed` → `claimed`
+- You can only schedule withdrawals up to your available balance (deposited balance minus active positions)
+- Multiple scheduled withdrawals are batched when claiming
+- Withdrawal scheduling signatures expire after 10 minutes
+
+### Deposits
 - The SDK handles USDC approval automatically for deposits
+- After deposits, balances update automatically via blockchain events
+
+### General
 - All amounts are in µUSDC (6 decimal places: 1 USDC = 1_000_000 µUSDC)
 - Vault and USDC addresses are automatically fetched from the `/info` endpoint and cached per client instance
 - Transaction confirmation can take 2-5 seconds on Base network

@@ -67,6 +67,8 @@
             "group": "Account",
             "pages": [
               "api-reference/endpoint/deposited-balance",
+              "api-reference/endpoint/schedule-withdraw",
+              "api-reference/endpoint/pending-withdraws",
               "api-reference/endpoint/get-withdraw-authorization"
             ]
           },

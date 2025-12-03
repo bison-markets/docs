@@ -244,19 +244,11 @@
                     "pattern": "^0x[a-fA-F0-9]{40}$",
                     "description": "User wallet address",
                     "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
-                  },
-                  "amountUusdc": {
-                    "type": "number",
-                    "minimum": 0,
-                    "exclusiveMinimum": true,
-                    "description": "Amount to withdraw in µUSDC (micro-USDC, 6 decimals)",
-                    "example": 1000000
                   }
                 },
                 "required": [
                   "chain",
-                  "userAddress",
-                  "amountUusdc"
+                  "userAddress"
                 ]
               }
             }
@@ -284,7 +276,7 @@
                     },
                     "maxWithdrawAmount": {
                       "type": "number",
-                      "description": "Maximum amount user can withdraw in µUSDC"
+                      "description": "Total amount available to withdraw in µUSDC"
                     }
                   },
                   "required": [
@@ -317,6 +309,246 @@
           },
           "500": {
             "description": "Failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/schedule-withdraw": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userAddress": {
+                    "type": "string"
+                  },
+                  "chain": {
+                    "type": "string",
+                    "enum": [
+                      "base",
+                      "bsc"
+                    ]
+                  },
+                  "amountUusdc": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true
+                  },
+                  "signature": {
+                    "type": "string"
+                  },
+                  "expiry": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "userAddress",
+                  "chain",
+                  "amountUusdc",
+                  "signature",
+                  "expiry"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Withdraw scheduled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "withdrawId": {
+                      "type": "string"
+                    },
+                    "amountUusdc": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "pending",
+                        "fill-locked",
+                        "unclaimed",
+                        "claimed"
+                      ]
+                    },
+                    "scheduledAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "withdrawId",
+                    "amountUusdc",
+                    "status",
+                    "scheduledAt"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request or insufficient balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pending-withdraws/{userAddress}": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "userAddress",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User pending withdraws retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "withdraws": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "chain": {
+                            "type": "string",
+                            "enum": [
+                              "base",
+                              "bsc"
+                            ]
+                          },
+                          "amountUusdc": {
+                            "type": "number"
+                          },
+                          "claimedAmountUusdc": {
+                            "type": "number"
+                          },
+                          "remainingUusdc": {
+                            "type": "number"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "fill-locked",
+                              "unclaimed",
+                              "claimed"
+                            ]
+                          },
+                          "scheduledAt": {
+                            "type": "string"
+                          },
+                          "lockedAt": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "unclaimedAt": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "chain",
+                          "amountUusdc",
+                          "claimedAmountUusdc",
+                          "remainingUusdc",
+                          "status",
+                          "scheduledAt",
+                          "lockedAt",
+                          "unclaimedAt"
+                        ]
+                      }
+                    },
+                    "totalPending": {
+                      "type": "number"
+                    },
+                    "totalFillLocked": {
+                      "type": "number"
+                    },
+                    "totalUnclaimed": {
+                      "type": "number"
+                    },
+                    "totalAvailableUnclaimed": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "withdraws",
+                    "totalPending",
+                    "totalFillLocked",
+                    "totalUnclaimed",
+                    "totalAvailableUnclaimed"
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
             "content": {
               "application/json": {
                 "schema": {
@@ -706,6 +938,14 @@
                           "chain": {
                             "type": "string"
                           },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "pending",
+                              "filled",
+                              "cancelled"
+                            ]
+                          },
                           "createdAt": {
                             "type": "number"
                           },
@@ -724,6 +964,7 @@
                           "filledUusdc",
                           "priceUusdc",
                           "chain",
+                          "status",
                           "createdAt",
                           "updatedAt"
                         ]
@@ -1228,6 +1469,11 @@
                     "type": "number",
                     "description": "Unix timestamp when the authorization expires",
                     "example": 1234567890
+                  },
+                  "devAccountId": {
+                    "type": "string",
+                    "description": "Optional dev account ID to attribute this order to",
+                    "example": "bison"
                   }
                 },
                 "required": [
