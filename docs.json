@@ -19,6 +19,7 @@
       {
         "tab": "General",
         "pages": [
+          "general/environments",
           "general/dev-accounts",
           "general/fees"
         ]
@@ -120,7 +121,14 @@
     "dark": "/logo/dark.svg"
   },
   "navbar": {
-    "links": []
+    "links": [
+      {
+        "icon": "github",
+        "iconType": "brands",
+        "label": "GitHub",
+        "href": "https://github.com/bison-markets"
+      }
+    ]
   },
   "contextual": {
     "options": [

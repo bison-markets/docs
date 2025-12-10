@@ -1,0 +1,100 @@
+---
+title: "Environments"
+description: "Production and testnet environments for Bison"
+---
+
+## Overview
+
+Bison offers two environments:
+
+| Environment | API URL | Chains |
+|-------------|---------|--------|
+| Production | `https://api.bison.markets` | Base, BSC |
+| Testnet | `https://testnet-api.bison.markets` | Base Sepolia, BSC Testnet |
+
+## Withdrawal Flow
+
+Withdrawals use a two-step process:
+
+<Steps>
+  <Step title="Schedule Withdrawal">
+    Request a withdrawal by signing a message (no gas required). Your withdrawal enters the queue with status `pending`.
+  </Step>
+  <Step title="Wait for Processing">
+    The system processes withdrawals on a schedule. Status transitions: `pending` → `fill-locked` → `unclaimed`.
+  </Step>
+  <Step title="Claim On-Chain">
+    Once your withdrawal shows `unclaimed`, call `claimWithdraw()` to receive USDC in your wallet (requires gas). If you have multiple unclaimed withdrawals, they're claimed together in one transaction.
+  </Step>
+</Steps>
+
+### Processing Times
+
+| Environment | Time to Claimable |
+|-------------|-------------------|
+| Testnet | **≤5 minutes** (automatic) |
+| Production | **1-2 business days** |
+
+<Info>
+On testnet, withdrawals are processed automatically every 5 minutes. On production, withdrawals are processed daily.
+</Info>
+
+## Code Example
+
+The SDK code is identical for both environments—only the processing time differs:
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+// Choose your environment
+const client = createBisonClient({ 
+  baseUrl: 'https://testnet-api.bison.markets' // or api.bison.markets
+});
+
+// Step 1: Schedule withdrawal (signature only, no gas)
+const withdrawal = await client.scheduleWithdraw({
+  walletClient,
+  userAddress: '0x...',
+  chain: 'base',
+  amountUusdc: 50_000_000, // 50 USDC
+});
+
+console.log('Scheduled:', withdrawal.status); // "pending"
+
+// Step 2: Wait for processing, then check status
+const pending = await client.getPendingWithdraws({ userAddress: '0x...' });
+
+if (pending.totalAvailableUnclaimed > 0) {
+  // Step 3: Claim on-chain
+  const txHash = await client.claimWithdraw({
+    walletClient,
+    publicClient,
+    userAddress: '0x...',
+    chain: 'base',
+  });
+  console.log('Claimed:', txHash);
+}
+```
+
+## Environment Differences
+
+| Feature | Production | Testnet |
+|---------|------------|---------|
+| USDC | Real USDC | MockUSDC (mintable) |
+| Withdrawal processing | 1-2 business days | ≤5 minutes |
+| Kalshi API | Production Kalshi | Demo Kalshi |
+| Chain IDs | Base (8453), BSC (56) | Base Sepolia (84532), BSC Testnet (97) |
+
+## Getting Testnet Tokens
+
+To get started on testnet:
+
+1. Get testnet ETH from a faucet:
+   - [Base Sepolia Faucet](https://www.alchemy.com/faucets/base-sepolia)
+   - [BSC Testnet Faucet](https://testnet.bnbchain.org/faucet-smart)
+2. The MockUSDC contract allows anyone to mint tokens for testing
+
+<Warning>
+Testnet tokens have no real value. Never send real funds to testnet addresses.
+</Warning>
+
