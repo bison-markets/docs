@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Never repeat yourself across files. When you find yourself doing this, extract the relevant info to a snippet and use that instead.
