@@ -1,0 +1,30 @@
+## Authentication
+
+This endpoint requires EIP-712 signature-based authentication via the `X-Dev-Auth` header.
+
+<ParamField header="X-Dev-Auth" type="string" required>
+  JSON-encoded authentication payload containing the signed message.
+</ParamField>
+
+### X-Dev-Auth Format
+
+```json
+{
+  "devAccountId": "your-dev-account-id",
+  "action": "<action>",
+  "expiry": 1734567890,
+  "signature": "0x..."
+}
+```
+
+The signature must be an EIP-712 typed data signature with:
+
+- **Domain**: `{ name: "BisonDevAuth", version: "1" }`
+- **Primary Type**: `DevAccountAuth`
+- **Message Fields**:
+  - `devAccountId` (string): Your dev account identifier
+  - `action` (string): The action being performed (see endpoint docs)
+  - `expiry` (uint256): Unix timestamp when signature expires (max 5 minutes in future)
+
+The signature must be signed by the wallet associated with your dev account's `signerAddress`.
+

@@ -1,0 +1,19 @@
+---
+title: 'Get Dev Account Info'
+openapi: 'GET /dev/info'
+---
+
+import DevAuth from '/snippets/dev-auth.mdx';
+
+Retrieve your dev account configuration and settings.
+
+<DevAuth />
+
+The `action` field must be `"info"` for this endpoint.
+
+## Response Fields
+
+- **grossFeeBps**: Your fee rate in basis points (100 = 1%). Applied to the notional value of each trade.
+- **grossBaseFeeUusdc**: Flat fee per trade in µUSDC, added on top of the percentage fee.
+- **bisonFeeCutBps**: Bison's share of your gross fees in basis points. The remainder goes to you.
+

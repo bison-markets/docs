@@ -1,0 +1,359 @@
+---
+title: "Developer Fees"
+description: "Checking and claiming accumulated dev account fees"
+---
+
+import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import FeeStates from '/snippets/fee-states.mdx';
+
+## Overview
+
+The SDK provides methods for developers to manage their accounts, check fee balances, and claim fees:
+
+- `getDevAccountInfo` - Get your dev account configuration and settings
+- `getDevAccountFees` - Check fee balances for your dev account
+- `getFeeClaimAuthorization` - Get an authorization signature to claim fees
+- `claimDevFees` - High-level method that handles authorization and transaction submission
+
+<UusdcExplanation />
+
+## Configuration
+
+Developer fee methods require configuring `devFlags` when creating the client. This enables EIP-712 signature-based authentication with the API.
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets',
+  devFlags: {
+    privateKey: '0x...',  // Your dev account signer's private key
+    devAccountId: 'my-dev-account',
+  },
+});
+```
+
+<Warning>
+Never expose your private key in client-side code. These methods are intended for server-side or CLI usage where the private key can be securely managed.
+</Warning>
+
+## Getting Account Info
+
+Retrieve your dev account configuration and settings.
+
+### `getDevAccountInfo`
+
+```typescript
+async getDevAccountInfo(): Promise<{
+  id: string;
+  name: string;
+  email: string;
+  grossFeeBps: number;
+  grossBaseFeeUusdc: number;
+  bisonFeeCutBps: number;
+  payoutChain: string;
+  signerAddress: string;
+  createdAt: string;
+}>
+```
+
+#### Returns
+
+<ResponseField name="id" type="string">
+  Dev account identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Dev account display name
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Dev account email
+</ResponseField>
+
+<ResponseField name="grossFeeBps" type="number">
+  Your fee rate in basis points (100 = 1%)
+</ResponseField>
+
+<ResponseField name="grossBaseFeeUusdc" type="number">
+  Flat fee per trade in µUSDC
+</ResponseField>
+
+<ResponseField name="bisonFeeCutBps" type="number">
+  Bison's share of your gross fees in basis points
+</ResponseField>
+
+<ResponseField name="payoutChain" type="string">
+  Chain where fees can be claimed
+</ResponseField>
+
+<ResponseField name="signerAddress" type="string">
+  Address that will receive fee payouts
+</ResponseField>
+
+<ResponseField name="createdAt" type="string">
+  Account creation timestamp (ISO 8601)
+</ResponseField>
+
+#### Example
+
+```typescript
+const info = await client.getDevAccountInfo();
+
+console.log('Dev Account:', info.name);
+console.log(`  Fee Rate: ${info.grossFeeBps / 100}%`);
+console.log(`  Base Fee: ${info.grossBaseFeeUusdc / 1_000_000} USDC per trade`);
+console.log(`  Bison Cut: ${info.bisonFeeCutBps / 100}% of gross fees`);
+console.log(`  Payout Chain: ${info.payoutChain}`);
+console.log(`  Signer: ${info.signerAddress}`);
+// Expected output:
+// Dev Account: My Trading App
+//   Fee Rate: 0.5%
+//   Base Fee: 0.10 USDC per trade
+//   Bison Cut: 20% of gross fees
+//   Payout Chain: base
+//   Signer: 0xf39F...2266
+```
+
+## Checking Fee Balances
+
+Query your dev account's accumulated fees across different states.
+
+### `getDevAccountFees`
+
+```typescript
+async getDevAccountFees(): Promise<{
+  id: string;
+  name: string;
+  pendingFeesUusdc: number;
+  lockedFeesUusdc: number;
+  unclaimedFeesUusdc: number;
+  payoutChain: string;
+  signerAddress: string;
+}>
+```
+
+This method automatically uses your configured `devFlags` for authentication.
+
+#### Returns
+
+<ResponseField name="id" type="string">
+  Dev account identifier
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Dev account display name
+</ResponseField>
+
+<ResponseField name="pendingFeesUusdc" type="number">
+  Fees from trades that haven't been confirmed yet
+</ResponseField>
+
+<ResponseField name="lockedFeesUusdc" type="number">
+  Fees locked for payout (awaiting operator settlement)
+</ResponseField>
+
+<ResponseField name="unclaimedFeesUusdc" type="number">
+  Fees available to claim via the vault contract
+</ResponseField>
+
+<ResponseField name="payoutChain" type="string">
+  Chain where fees can be claimed
+</ResponseField>
+
+<ResponseField name="signerAddress" type="string">
+  Address that will receive fee payouts
+</ResponseField>
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets',
+  devFlags: {
+    privateKey: process.env.DEV_PRIVATE_KEY as `0x${string}`,
+    devAccountId: 'my-dev-account',
+  },
+});
+
+const fees = await client.getDevAccountFees();
+
+console.log('Fee balances:');
+console.log(`  Pending: ${fees.pendingFeesUusdc / 1_000_000} USDC`);
+console.log(`  Locked: ${fees.lockedFeesUusdc / 1_000_000} USDC`);
+console.log(`  Claimable: ${fees.unclaimedFeesUusdc / 1_000_000} USDC`);
+console.log(`  Payout chain: ${fees.payoutChain}`);
+// Expected output:
+// Fee balances:
+//   Pending: 12.50 USDC
+//   Locked: 0 USDC
+//   Claimable: 45.00 USDC
+//   Payout chain: base
+```
+
+## Claiming Fees
+
+Claim accumulated fees from the vault contract to your signer address.
+
+### `claimDevFees`
+
+This high-level method handles getting the authorization signature and submitting the claim transaction.
+
+```typescript
+async claimDevFees(params: {
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}): Promise<`0x${string}`>
+```
+
+#### Parameters
+
+<ParamField path="walletClient" type="WalletClient" required>
+  Viem wallet client for signing transactions
+</ParamField>
+
+<ParamField path="publicClient" type="PublicClient" required>
+  Viem public client for reading contract state
+</ParamField>
+
+#### Returns
+
+Transaction hash of the fee claim transaction.
+
+#### Example
+
+```typescript
+import { createBisonClient } from 'bison-sdk-ts';
+import { createWalletClient, createPublicClient, http, custom } from 'viem';
+import { base } from 'viem/chains';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets',
+  devFlags: {
+    privateKey: process.env.DEV_PRIVATE_KEY as `0x${string}`,
+    devAccountId: 'my-dev-account',
+  },
+});
+
+const walletClient = createWalletClient({
+  chain: base,
+  transport: custom(window.ethereum!),
+});
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http(),
+});
+
+// Check claimable balance first
+const fees = await client.getDevAccountFees();
+
+if (fees.unclaimedFeesUusdc > 0) {
+  console.log(`Claiming ${fees.unclaimedFeesUusdc / 1_000_000} USDC...`);
+  
+  const txHash = await client.claimDevFees({
+    walletClient,
+    publicClient,
+  });
+  
+  console.log('Fees claimed! Transaction:', txHash);
+  // Expected output: "Fees claimed! Transaction: 0xabc123..."
+} else {
+  console.log('No fees available to claim');
+}
+```
+
+## Low-Level Authorization
+
+For advanced use cases, you can get the authorization signature directly.
+
+### `getFeeClaimAuthorization`
+
+```typescript
+async getFeeClaimAuthorization(): Promise<{
+  uuid: string;
+  signature: string;
+  expiresAt: number;
+  amount: number;
+  chain: string;
+  signerAddress: string;
+}>
+```
+
+<Warning>
+The authorization expires after 30 seconds. If you don't use it in time, you'll need to request a new one.
+</Warning>
+
+#### Example
+
+```typescript
+import { VAULT_ABI } from 'bison-sdk-ts';
+
+const auth = await client.getFeeClaimAuthorization();
+
+console.log('Fee claim authorization:');
+console.log(`  Amount: ${auth.amount / 1_000_000} USDC`);
+console.log(`  Chain: ${auth.chain}`);
+console.log(`  Expires at: ${new Date(auth.expiresAt * 1000).toISOString()}`);
+
+// Use the authorization with the vault contract
+const chainInfo = await client.getInfo();
+const vaultAddress = chainInfo.chains[auth.chain].vaultAddress;
+
+const txHash = await walletClient.writeContract({
+  address: vaultAddress,
+  abi: VAULT_ABI,
+  functionName: 'withdrawUSDC',
+  args: [
+    auth.uuid,
+    BigInt(auth.amount),
+    auth.signerAddress as `0x${string}`,
+    BigInt(auth.expiresAt),
+    auth.signature as `0x${string}`,
+  ],
+  account: auth.signerAddress as `0x${string}`,
+});
+
+console.log('Fee claim submitted:', txHash);
+```
+
+<FeeStates />
+
+## Error Handling
+
+```typescript
+try {
+  const txHash = await client.claimDevFees({
+    walletClient,
+    publicClient,
+  });
+  console.log('Success:', txHash);
+} catch (error) {
+  if (error instanceof Error) {
+    if (error.message.includes('devFlags required')) {
+      console.error('Client not configured with devFlags');
+    } else if (error.message.includes('No unclaimed fees')) {
+      console.error('No fees available to claim');
+    } else if (error.message.includes('pending fee claim signature')) {
+      console.error('A claim is already in progress. Wait for it to expire.');
+    } else if (error.message.includes('Signature expired')) {
+      console.error('Auth signature expired, try again');
+    } else if (error.message.includes('User rejected')) {
+      console.error('User cancelled transaction');
+    } else {
+      console.error('Claim failed:', error.message);
+    }
+  }
+}
+```
+
+## Important Notes
+
+- All fee amounts are in µUSDC (6 decimal places: 1 USDC = 1,000,000 µUSDC)
+- Fee claim authorizations expire after 30 seconds
+- You can only have one pending claim authorization at a time
+- Fees are paid out to the signer address configured for your dev account
+- Use `getDevAccountFees` to check your balance before attempting to claim
+- The SDK automatically handles EIP-712 authentication when `devFlags` is configured

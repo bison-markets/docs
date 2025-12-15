@@ -1,0 +1,12 @@
+## Fee States
+
+Fees progress through the following states:
+
+| State | Description |
+|-------|-------------|
+| **Pending** | Fees from trades that haven't been confirmed yet |
+| **Locked** | Fees locked for payout (awaiting operator settlement) |
+| **Unclaimed** | Fees available to claim via the vault contract |
+
+Only **unclaimed** fees can be claimed. Pending and locked fees will become claimable after the settlement process completes.
+

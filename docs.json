@@ -40,7 +40,8 @@
                   "sdks/typescript/api/events",
                   "sdks/typescript/api/deposits",
                   "sdks/typescript/api/trades",
-                  "sdks/typescript/api/tokenization"
+                  "sdks/typescript/api/tokenization",
+                  "sdks/typescript/api/dev-fees"
                 ]
               }
             ]
@@ -93,6 +94,14 @@
             "pages": [
               "api-reference/endpoint/get-event",
               "api-reference/endpoint/get-event-metadata"
+            ]
+          },
+          {
+            "group": "Developer",
+            "pages": [
+              "api-reference/endpoint/dev-info",
+              "api-reference/endpoint/dev-fees",
+              "api-reference/endpoint/dev-fee-claim-authorization"
             ]
           }
         ]

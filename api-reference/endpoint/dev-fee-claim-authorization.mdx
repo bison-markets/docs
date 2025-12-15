@@ -1,0 +1,21 @@
+---
+title: 'Get Fee Claim Authorization'
+openapi: 'POST /dev/fee-claim-authorization'
+---
+
+import DevAuth from '/snippets/dev-auth.mdx';
+
+Generate an authorization signature to claim accumulated dev account fees from the vault contract.
+
+<Warning>
+This endpoint creates a claim lock that expires after 30 seconds. If you don't use the signature in time, you'll need to request a new one.
+</Warning>
+
+<DevAuth />
+
+The `action` field must be `"fee-claim-authorization"` for this endpoint.
+
+## Usage
+
+After receiving the authorization, call `withdrawUSDC` on the vault contract with the returned parameters to claim your fees.
+

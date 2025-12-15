@@ -131,5 +131,35 @@ We'll work with you to:
 
 ## Fee Settlement
 
-Fee settlement details and schedules will be discussed when you set up your dev account.
+Fees progress through three states as trades are confirmed and settled:
+
+1. **Pending** - Fees from trades not yet confirmed
+2. **Locked** - Fees being processed by the operator
+3. **Unclaimed** - Fees ready to claim from the vault contract
+
+### Checking Your Fee Balance
+
+Use the SDK or API to check your accumulated fees:
+
+```typescript
+const fees = await client.getDevAccountFees({
+  devAccountId: 'your-dev-account-id'
+});
+
+console.log(`Claimable: ${fees.unclaimedFeesUusdc / 1_000_000} USDC`);
+```
+
+### Claiming Fees
+
+When you have unclaimed fees, claim them directly to your signer address:
+
+```typescript
+const txHash = await client.claimDevFees({
+  walletClient,
+  publicClient,
+  devAccountId: 'your-dev-account-id',
+});
+```
+
+See the [Developer Fees SDK documentation](/sdks/typescript/api/dev-fees) for complete examples and error handling.
 
