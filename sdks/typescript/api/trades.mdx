@@ -261,26 +261,152 @@ console.log('Order cancellation requested');
 
 ### `getUserOrders`
 
-Get all orders for a user.
+Get orders for a user with optional filtering and pagination.
 
 ```typescript
-async getUserOrders(userId: string): Promise<GetUserOrdersResponse>
+async getUserOrders(
+  userId: string,
+  params?: GetUserOrdersParams
+): Promise<GetUserOrdersResponse>
 ```
 
-#### Example
+#### Parameters
+
+<ParamField path="userId" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="params" type="object">
+  Optional filtering and pagination parameters
+</ParamField>
+
+<Expandable title="params properties">
+  <ParamField path="status" type="string">
+    Filter by order status: `"pending"`, `"filled"`, `"cancelled"`, or `"closed"` (filled OR cancelled)
+  </ParamField>
+
+  <ParamField path="marketId" type="string">
+    Filter by market ticker
+  </ParamField>
+
+  <ParamField path="action" type="string">
+    Filter by action: `"buy"` or `"sell"`
+  </ParamField>
+
+  <ParamField path="side" type="string">
+    Filter by side: `"yes"` or `"no"`
+  </ParamField>
+
+  <ParamField path="createdAfter" type="number">
+    Orders created after this timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="createdBefore" type="number">
+    Orders created before this timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="sortBy" type="string">
+    Sort by field: `"createdAt"` (default) or `"updatedAt"`
+  </ParamField>
+
+  <ParamField path="sortOrder" type="string">
+    Sort direction: `"desc"` (default) or `"asc"`
+  </ParamField>
+
+  <ParamField path="limit" type="number">
+    Max orders per page (default: 50, max: 200)
+  </ParamField>
+
+  <ParamField path="cursor" type="string">
+    Pagination cursor from previous response
+  </ParamField>
+</Expandable>
+
+#### Response
+
+The response includes an `orders` array and a `pagination` object:
+
+```typescript
+{
+  orders: Order[];
+  pagination: {
+    total: number;      // Total matching orders
+    hasMore: boolean;   // More pages available
+    nextCursor?: string; // Cursor for next page
+  };
+}
+```
+
+#### Examples
+
+**Get all pending orders:**
 
 ```typescript
 const { orders } = await client.getUserOrders(
-  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { status: 'pending' }
 );
 
 console.log('Open orders:');
 orders.forEach(order => {
   console.log(`${order.action} ${order.requestedQuantity} ${order.side} @ $${order.priceUusdc / 1_000_000}`);
   console.log(`  Market: ${order.marketId}`);
-  console.log(`  Filled: ${order.filledQuantity}/${order.requestedQuantity}`);
   console.log(`  Order ID: ${order.kalshiOrderId}`);
 });
+```
+
+**Get order history with pagination:**
+
+```typescript
+// First page of completed orders
+const result = await client.getUserOrders(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { 
+    status: 'closed',
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+    limit: 10 
+  }
+);
+
+console.log(`Showing ${result.orders.length} of ${result.pagination.total} orders`);
+
+// Fetch next page if available
+if (result.pagination.hasMore) {
+  const nextPage = await client.getUserOrders(
+    '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    { 
+      status: 'closed',
+      sortBy: 'updatedAt',
+      sortOrder: 'desc',
+      limit: 10,
+      cursor: result.pagination.nextCursor
+    }
+  );
+}
+```
+
+**Filter by market:**
+
+```typescript
+const { orders } = await client.getUserOrders(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { marketId: 'KXFEDDECISION-26JAN-T425' }
+);
+```
+
+**Filter by date range:**
+
+```typescript
+const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+const { orders } = await client.getUserOrders(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { 
+    status: 'filled',
+    createdAfter: oneWeekAgo 
+  }
+);
 ```
 
 ### `getUserPositions`
