@@ -95,7 +95,7 @@ async executeBuyFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
+  Chain identifier (`"base"` or `"bsc"`). Vault address is automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="marketId" type="string" required>
@@ -131,7 +131,7 @@ Object containing:
 #### Example
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 import { createWalletClient, createPublicClient, http, custom } from 'viem';
 import { base } from 'viem/chains';
 
@@ -236,7 +236,7 @@ async executeCancelOrderFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported). Vault address is automatically resolved from the `/info` endpoint.
+  Chain identifier (`"base"` or `"bsc"`). Vault address is automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="orderId" type="string" required>
@@ -440,7 +440,7 @@ Get token addresses and balances for position tokens.
 ```typescript
 async getPositionTokenAddress(params: {
   publicClient: PublicClient;
-  chain: 'base';
+  chain: 'base' | 'bsc';
   marketId: string;
   side: 'yes' | 'no';
 }): Promise<`0x${string}` | null>

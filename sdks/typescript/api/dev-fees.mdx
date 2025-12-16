@@ -22,7 +22,7 @@ The SDK provides methods for developers to manage their accounts, check fee bala
 Developer fee methods require configuring `devFlags` when creating the client. This enables EIP-712 signature-based authentication with the API.
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets',
@@ -168,7 +168,7 @@ This method automatically uses your configured `devFlags` for authentication.
 #### Example
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets',
@@ -225,7 +225,7 @@ Transaction hash of the fee claim transaction.
 #### Example
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 import { createWalletClient, createPublicClient, http, custom } from 'viem';
 import { base } from 'viem/chains';
 
@@ -289,7 +289,7 @@ The authorization expires after 30 seconds. If you don't use it in time, you'll 
 #### Example
 
 ```typescript
-import { VAULT_ABI } from 'bison-sdk-ts';
+import { VAULT_ABI } from '@bison-markets/sdk-ts';
 
 const auth = await client.getFeeClaimAuthorization();
 

@@ -28,7 +28,7 @@ async executeDepositFlow(params: {
   walletClient: WalletClient;
   publicClient: PublicClient;
   userAddress: `0x${string}`;
-  chain: 'base';
+  chain: 'base' | 'bsc';
   amountUusdc: number;
 }): Promise<`0x${string}`>
 ```
@@ -48,7 +48,7 @@ async executeDepositFlow(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported). Vault and USDC addresses are automatically resolved from the `/info` endpoint.
+  Chain identifier (`"base"` or `"bsc"`). Vault and USDC addresses are automatically resolved from the `/info` endpoint.
 </ParamField>
 
 <ParamField path="amountUusdc" type="number" required>
@@ -62,7 +62,7 @@ Transaction hash of the deposit transaction.
 #### Example
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 import { createWalletClient, createPublicClient, http, custom } from 'viem';
 import { base } from 'viem/chains';
 
@@ -110,7 +110,7 @@ Schedules a withdrawal request. This method requires only a signature and does n
 async scheduleWithdraw(params: {
   walletClient: WalletClient;
   userAddress: `0x${string}`;
-  chain: 'base';
+  chain: 'base' | 'bsc';
   amountUusdc: number;
 }): Promise<{
   withdrawId: string;
@@ -131,7 +131,7 @@ async scheduleWithdraw(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
+  Chain identifier (`"base"` or `"bsc"`)
 </ParamField>
 
 <ParamField path="amountUusdc" type="number" required>
@@ -208,7 +208,7 @@ async claimWithdraw(params: {
   walletClient: WalletClient;
   publicClient: PublicClient;
   userAddress: `0x${string}`;
-  chain: 'base';
+  chain: 'base' | 'bsc';
 }): Promise<`0x${string}`>
 ```
 
@@ -227,7 +227,7 @@ async claimWithdraw(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
+  Chain identifier (`"base"` or `"bsc"`)
 </ParamField>
 
 #### Returns
@@ -331,7 +331,7 @@ async getWithdrawAuthorization(options: {
 #### Example
 
 ```typescript
-import { VAULT_ABI } from 'bison-sdk-ts';
+import { VAULT_ABI } from '@bison-markets/sdk-ts';
 
 const userAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 

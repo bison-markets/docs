@@ -55,7 +55,7 @@ List of markets matching the filter criteria, including bid/ask prices, volume, 
 **Get all active markets:**
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets' 
@@ -164,7 +164,7 @@ Event information including all associated markets, their metadata, and current 
 #### Example
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets' 
@@ -180,7 +180,7 @@ console.log('Status:', event.status);
 // List all markets in the event
 event.markets.forEach(market => {
   console.log(`Market: ${market.ticker}`);
-  console.log(`  Subtitle: ${market.subtitle}`);
+  console.log(`  Subtitle: ${market.yes_sub_title}`);
   console.log(`  Floor: ${market.floor_strike}`);
   console.log(`  Cap: ${market.cap_strike}`);
   console.log(`  Status: ${market.status}`);
@@ -210,17 +210,15 @@ Event metadata including title, description, category, and important dates.
 #### Example
 
 ```typescript
-const metadata = await client.getEventMetadata('KXFEDDECISION-26JAN');
+const data = await client.getEventMetadata('KXFEDDECISION-26JAN');
 
-console.log('Title:', metadata.title);
-console.log('Category:', metadata.category);
-console.log('Series ticker:', metadata.series_ticker);
-console.log('Mutually exclusive:', metadata.mutually_exclusive);
+console.log('Title:', data.event.title);
+console.log('Subtitle:', data.event.sub_title);
+console.log('Category:', data.event.category);
+console.log('Image URL:', data.event.image_url);
 
 // Check event timing
-console.log('Settlement date:', new Date(metadata.settlement_date));
-console.log('Close date:', new Date(metadata.close_date));
-console.log('Open date:', new Date(metadata.open_date));
+console.log('Expected expiration:', new Date(data.event.expected_expiration_time));
 ```
 
 ## Get Created Tokens
@@ -230,13 +228,13 @@ Retrieve information about position tokens that have been created on-chain.
 ### `getCreatedTokens`
 
 ```typescript
-async getCreatedTokens(chain?: 'base'): Promise<GetCreatedTokensResponse>
+async getCreatedTokens(chain?: 'base' | 'bsc'): Promise<GetCreatedTokensResponse>
 ```
 
 #### Parameters
 
 <ParamField path="chain" type="string">
-  Optional chain identifier. Currently only `"base"` is supported.
+  Optional chain identifier (`"base"` or `"bsc"`).
 </ParamField>
 
 #### Returns
@@ -246,14 +244,13 @@ List of created position tokens with their contract addresses and market informa
 #### Example
 
 ```typescript
-const tokens = await client.getCreatedTokens('base');
+const { tokens } = await client.getCreatedTokens('base');
 
 console.log('Created tokens:');
 tokens.forEach(token => {
   console.log(`Market: ${token.marketId}`);
-  console.log(`  YES token: ${token.yesTokenAddress}`);
-  console.log(`  NO token: ${token.noTokenAddress}`);
-  console.log(`  Created at: ${new Date(token.createdAt)}`);
+  console.log(`  Side: ${token.side}`);
+  console.log(`  Token address: ${token.tokenAddress}`);
 });
 ```
 
@@ -294,7 +291,7 @@ console.log('  RPC URL:', baseConfig.rpcUrl);
 Here's a complete example showing how to discover and monitor a market:
 
 ```typescript
-import { createBisonClient } from 'bison-sdk-ts';
+import { createBisonClient } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets' 
@@ -369,7 +366,7 @@ Get the on-chain token address for a specific market position.
 ```typescript
 async getPositionTokenAddress(params: {
   publicClient: PublicClient;
-  chain: 'base';
+  chain: 'base' | 'bsc';
   marketId: string;
   side: 'yes' | 'no';
 }): Promise<`0x${string}` | null>
@@ -382,7 +379,7 @@ async getPositionTokenAddress(params: {
 </ParamField>
 
 <ParamField path="chain" type="string" required>
-  Chain identifier (currently only `"base"` is supported)
+  Chain identifier (`"base"` or `"bsc"`)
 </ParamField>
 
 <ParamField path="marketId" type="string" required>
