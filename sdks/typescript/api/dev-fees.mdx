@@ -12,6 +12,7 @@ The SDK provides methods for developers to manage their accounts, check fee bala
 
 - `getDevAccountInfo` - Get your dev account configuration and settings
 - `getDevAccountFees` - Check fee balances for your dev account
+- `getDevFeeClaimHistory` - View history of completed fee claims
 - `getFeeClaimAuthorization` - Get an authorization signature to claim fees
 - `claimDevFees` - High-level method that handles authorization and transaction submission
 
@@ -191,6 +192,105 @@ console.log(`  Payout chain: ${fees.payoutChain}`);
 //   Locked: 0 USDC
 //   Claimable: 45.00 USDC
 //   Payout chain: base
+```
+
+## Fee Claim History
+
+View your past fee claim withdrawals.
+
+### `getDevFeeClaimHistory`
+
+```typescript
+async getDevFeeClaimHistory(params?: {
+  limit?: number;
+  cursor?: string;
+}): Promise<{
+  claims: Array<{
+    id: string;
+    chain: string;
+    amountUusdc: number;
+    payoutAddress: string;
+    claimedAt: string;
+  }>;
+  pagination: {
+    total: number;
+    hasMore: boolean;
+    nextCursor?: string;
+  };
+}>
+```
+
+#### Parameters
+
+<ParamField path="limit" type="number">
+  Maximum number of claims to return (default: 50, max: 200)
+</ParamField>
+
+<ParamField path="cursor" type="string">
+  Pagination cursor from a previous response
+</ParamField>
+
+#### Returns
+
+<ResponseField name="claims" type="array">
+  Array of fee claim records, sorted by most recent first
+</ResponseField>
+
+<ResponseField name="claims[].id" type="string">
+  Unique identifier for the claim
+</ResponseField>
+
+<ResponseField name="claims[].chain" type="string">
+  Chain where the claim was processed
+</ResponseField>
+
+<ResponseField name="claims[].amountUusdc" type="number">
+  Amount claimed in µUSDC
+</ResponseField>
+
+<ResponseField name="claims[].payoutAddress" type="string">
+  Address that received the payout
+</ResponseField>
+
+<ResponseField name="claims[].claimedAt" type="string">
+  Timestamp when the claim was completed (ISO 8601)
+</ResponseField>
+
+<ResponseField name="pagination.total" type="number">
+  Number of claims returned in this response
+</ResponseField>
+
+<ResponseField name="pagination.hasMore" type="boolean">
+  Whether more claims are available
+</ResponseField>
+
+<ResponseField name="pagination.nextCursor" type="string">
+  Cursor to fetch the next page (only present if hasMore is true)
+</ResponseField>
+
+#### Example
+
+```typescript
+const { claims, pagination } = await client.getDevFeeClaimHistory({ limit: 10 });
+
+console.log('Recent fee claims:');
+for (const claim of claims) {
+  const amount = claim.amountUusdc / 1_000_000;
+  const date = new Date(claim.claimedAt).toLocaleDateString();
+  console.log(`  ${date}: $${amount.toFixed(2)} on ${claim.chain}`);
+}
+// Expected output:
+// Recent fee claims:
+//   12/15/2025: $125.50 on base
+//   12/10/2025: $89.25 on base
+
+if (pagination.hasMore) {
+  // Fetch more claims
+  const nextPage = await client.getDevFeeClaimHistory({ 
+    limit: 10, 
+    cursor: pagination.nextCursor 
+  });
+}
 ```
 
 ## Claiming Fees

@@ -984,6 +984,127 @@
                 }
             }
         },
+        "/dev/fee-claim-history": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Max claims to return (default 50)"
+                        },
+                        "required": false,
+                        "description": "Max claims to return (default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Pagination cursor (claim ID)"
+                        },
+                        "required": false,
+                        "description": "Pagination cursor (claim ID)",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                        },
+                        "required": true,
+                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                        "name": "x-dev-auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fee claim history",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "claims": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "chain": {
+                                                        "type": "string"
+                                                    },
+                                                    "amountUusdc": {
+                                                        "type": "number"
+                                                    },
+                                                    "payoutAddress": {
+                                                        "type": "string"
+                                                    },
+                                                    "claimedAt": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "chain",
+                                                    "amountUusdc",
+                                                    "payoutAddress",
+                                                    "claimedAt"
+                                                ]
+                                            }
+                                        },
+                                        "pagination": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total": {
+                                                    "type": "number"
+                                                },
+                                                "hasMore": {
+                                                    "type": "boolean"
+                                                },
+                                                "nextCursor": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "total",
+                                                "hasMore"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "claims",
+                                        "pagination"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/kalshi/markets": {
             "get": {
                 "parameters": [

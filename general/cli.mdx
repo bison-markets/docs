@@ -117,3 +117,24 @@ Authorization:
   Signature: 0x...
 ```
 
+### `bison history`
+
+View past fee claim withdrawals.
+
+```
+$ bison history
+
+Fee Claim History (testnet)
+
+Account: abc123
+
+Date            Amount        Chain     Payout Address
+──────────────────────────────────────────────────────
+Dec 15, 2025    $125.50       base      0x1234...5678
+Dec 10, 2025    $89.25        base      0x1234...5678
+```
+
+| Option | Description |
+|--------|-------------|
+| `--limit <number>` | Number of claims to show (default: 10) |
+
