@@ -21,7 +21,8 @@
         "pages": [
           "general/environments",
           "general/dev-accounts",
-          "general/fees"
+          "general/fees",
+          "general/cli"
         ]
       },
       {
