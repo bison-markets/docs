@@ -23,6 +23,7 @@ async getMarkets(params?: {
   event_ticker?: string;
   status?: 'active' | 'closed' | 'settled';
   limit?: string;
+  query?: string;
 }): Promise<GetMarketsResponse>
 ```
 
@@ -44,6 +45,10 @@ All parameters are optional. Omit all parameters to retrieve all markets.
 
 <ParamField path="limit" type="string">
   Maximum number of markets to return (max 200)
+</ParamField>
+
+<ParamField path="query" type="string">
+  Search markets by title, subtitle, ticker, or category. Results are sorted by match relevance (title matches first, then subtitle, ticker, category).
 </ParamField>
 
 #### Returns
@@ -113,6 +118,23 @@ const byStatus = response.markets.reduce((acc, market) => {
 }, {} as Record<string, number>);
 
 console.log('Markets by status:', byStatus);
+```
+
+**Search by keyword:**
+
+```typescript
+// Search for markets mentioning "Price" in title, subtitle, or ticker
+const response = await client.getMarkets({
+  query: 'Price',
+  status: 'active'
+});
+
+console.log(`Found ${response.markets.length} markets matching "Price"`);
+
+// Results are sorted by relevance (title matches first)
+response.markets.forEach(market => {
+  console.log(`${market.ticker}: ${market.title}`);
+});
 ```
 
 **Find trading opportunities:**

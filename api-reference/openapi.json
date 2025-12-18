@@ -1236,6 +1236,17 @@
                         "description": "Number of markets to return (max 200)",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Search markets by title, subtitle, ticker, or category (results sorted by match relevance)",
+                            "example": "Price"
+                        },
+                        "required": false,
+                        "description": "Search markets by title, subtitle, ticker, or category (results sorted by match relevance)",
+                        "name": "query",
+                        "in": "query"
                     }
                 ],
                 "responses": {
