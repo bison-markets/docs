@@ -13,7 +13,7 @@ The SDK provides methods to query market information, event metadata, and system
 
 ## List Markets
 
-Search and filter Kalshi markets based on various criteria.
+Filter Kalshi markets by event, series, or status.
 
 ### `getMarkets`
 
@@ -23,7 +23,6 @@ async getMarkets(params?: {
   event_ticker?: string;
   status?: 'active' | 'closed' | 'settled';
   limit?: string;
-  query?: string;
 }): Promise<GetMarketsResponse>
 ```
 
@@ -45,10 +44,6 @@ All parameters are optional. Omit all parameters to retrieve all markets.
 
 <ParamField path="limit" type="string">
   Maximum number of markets to return (max 200)
-</ParamField>
-
-<ParamField path="query" type="string">
-  Search markets by title, subtitle, ticker, or category. Results are sorted by match relevance (title matches first, then subtitle, ticker, category).
 </ParamField>
 
 #### Returns
@@ -120,23 +115,6 @@ const byStatus = response.markets.reduce((acc, market) => {
 console.log('Markets by status:', byStatus);
 ```
 
-**Search by keyword:**
-
-```typescript
-// Search for markets mentioning "Price" in title, subtitle, or ticker
-const response = await client.getMarkets({
-  query: 'Price',
-  status: 'active'
-});
-
-console.log(`Found ${response.markets.length} markets matching "Price"`);
-
-// Results are sorted by relevance (title matches first)
-response.markets.forEach(market => {
-  console.log(`${market.ticker}: ${market.title}`);
-});
-```
-
 **Find trading opportunities:**
 
 ```typescript
@@ -161,6 +139,91 @@ console.log('Markets with tight spreads:');
 tightSpreads.slice(0, 10).forEach(m => {
   console.log(`  ${m.ticker}: ${(m.spread * 100).toFixed(1)}¢ spread, ${m.volume} volume`);
 });
+```
+
+## List Events
+
+Search and filter events from the Bison event cache. Events are synced from Kalshi hourly.
+
+### `getEvents`
+
+```typescript
+async getEvents(params?: {
+  series_ticker?: string;
+  limit?: string;
+  query?: string;
+}): Promise<GetEventsResponse>
+```
+
+#### Parameters
+
+All parameters are optional. Omit all parameters to retrieve all events.
+
+<ParamField path="series_ticker" type="string">
+  Filter by Kalshi series ticker (e.g., `"KXBTC"`)
+</ParamField>
+
+<ParamField path="limit" type="string">
+  Maximum number of events to return (max 200)
+</ParamField>
+
+<ParamField path="query" type="string">
+  Search events by title, subtitle, or ticker. Results are sorted by match relevance (title matches first, then subtitle, ticker).
+</ParamField>
+
+#### Returns
+
+List of events matching the filter criteria, including title, subtitle, and category.
+
+#### Examples
+
+**Get all events:**
+
+```typescript
+import { createBisonClient } from '@bison-markets/sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets' 
+});
+
+const response = await client.getEvents({ limit: '20' });
+
+console.log(`Found ${response.events.length} events`);
+
+response.events.forEach(event => {
+  console.log(`${event.event_ticker}: ${event.title}`);
+  if (event.sub_title) {
+    console.log(`  ${event.sub_title}`);
+  }
+});
+```
+
+**Search by keyword:**
+
+```typescript
+// Search for events mentioning "Bitcoin" in title, subtitle, or ticker
+const response = await client.getEvents({
+  query: 'Bitcoin',
+  limit: '5'
+});
+
+console.log(`Found ${response.events.length} events matching "Bitcoin"`);
+
+// Results are sorted by relevance (title matches first)
+response.events.forEach(event => {
+  console.log(`${event.event_ticker}: ${event.title}`);
+});
+```
+
+**Filter by series:**
+
+```typescript
+// Get all events in the Bitcoin series
+const response = await client.getEvents({
+  series_ticker: 'KXBTC'
+});
+
+console.log(`Found ${response.events.length} Bitcoin events`);
 ```
 
 ## Get Event Information
