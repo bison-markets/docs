@@ -1,5 +1,5 @@
 ---
-title: "Markets"
+title: "Events & Markets"
 description: "Querying market data and metadata"
 ---
 
@@ -11,137 +11,7 @@ The SDK provides methods to query market information, event metadata, and system
 
 <UusdcExplanation />
 
-## List Markets
-
-Filter Kalshi markets by event, series, or status.
-
-### `getMarkets`
-
-```typescript
-async getMarkets(params?: {
-  series_ticker?: string;
-  event_ticker?: string;
-  status?: 'active' | 'closed' | 'settled';
-  limit?: string;
-}): Promise<GetMarketsResponse>
-```
-
-#### Parameters
-
-All parameters are optional. Omit all parameters to retrieve all markets.
-
-<ParamField path="series_ticker" type="string">
-  Filter by Kalshi series ticker (e.g., `"KXPREZ"`)
-</ParamField>
-
-<ParamField path="event_ticker" type="string">
-  Filter by Kalshi event ticker (e.g., `"KXFEDDECISION-26JAN"`)
-</ParamField>
-
-<ParamField path="status" type="string">
-  Filter by market status: `"active"`, `"closed"`, or `"settled"`
-</ParamField>
-
-<ParamField path="limit" type="string">
-  Maximum number of markets to return (max 200)
-</ParamField>
-
-#### Returns
-
-List of markets matching the filter criteria, including bid/ask prices, volume, and metadata.
-
-#### Examples
-
-**Get all active markets:**
-
-```typescript
-import { createBisonClient } from '@bison-markets/sdk-ts';
-
-const client = createBisonClient({ 
-  baseUrl: 'https://api.bison.markets' 
-});
-
-const response = await client.getMarkets({ status: 'active' });
-
-console.log(`Found ${response.markets.length} active markets`);
-
-response.markets.forEach(market => {
-  console.log(`${market.ticker}: ${market.title}`);
-  console.log(`  YES: ${market.yes_bid} / ${market.yes_ask}`);
-  console.log(`  NO: ${market.no_bid} / ${market.no_ask}`);
-  console.log(`  Volume: ${market.volume}`);
-});
-```
-
-**Filter by event ticker:**
-
-```typescript
-// Get all markets for a specific event
-const response = await client.getMarkets({
-  event_ticker: 'KXFEDDECISION-26JAN',
-  status: 'active'
-});
-
-console.log(`Event has ${response.markets.length} active markets`);
-
-// Find markets with high volume
-const popularMarkets = response.markets
-  .filter(m => m.volume && m.volume > 1000)
-  .sort((a, b) => (b.volume || 0) - (a.volume || 0));
-
-console.log('Most popular markets:');
-popularMarkets.slice(0, 5).forEach(m => {
-  console.log(`  ${m.ticker}: ${m.volume} volume`);
-});
-```
-
-**Filter by series:**
-
-```typescript
-// Get all presidential election markets
-const response = await client.getMarkets({
-  series_ticker: 'KXPREZ',
-  limit: '50'
-});
-
-console.log(`Found ${response.markets.length} presidential markets`);
-
-// Group by status
-const byStatus = response.markets.reduce((acc, market) => {
-  acc[market.status || 'unknown'] = (acc[market.status || 'unknown'] || 0) + 1;
-  return acc;
-}, {} as Record<string, number>);
-
-console.log('Markets by status:', byStatus);
-```
-
-**Find trading opportunities:**
-
-```typescript
-// Find markets with tight spreads
-const response = await client.getMarkets({ status: 'active' });
-
-const tightSpreads = response.markets
-  .filter(m => {
-    if (!m.yes_bid || !m.yes_ask) return false;
-    const spread = m.yes_ask - m.yes_bid;
-    return spread <= 0.02; // 2 cent spread or less
-  })
-  .map(m => ({
-    ticker: m.ticker,
-    title: m.title,
-    spread: m.yes_ask! - m.yes_bid!,
-    volume: m.volume || 0
-  }))
-  .sort((a, b) => a.spread - b.spread);
-
-console.log('Markets with tight spreads:');
-tightSpreads.slice(0, 10).forEach(m => {
-  console.log(`  ${m.ticker}: ${(m.spread * 100).toFixed(1)}¢ spread, ${m.volume} volume`);
-});
-```
-
-## List Events
+## List & Search Events
 
 Search and filter events from the Bison event cache. Events are synced from Kalshi hourly.
 
@@ -304,6 +174,136 @@ console.log('Image URL:', data.event.image_url);
 
 // Check event timing
 console.log('Expected expiration:', new Date(data.event.expected_expiration_time));
+```
+
+## List Markets
+
+Filter Kalshi markets by event, series, or status.
+
+### `getMarkets`
+
+```typescript
+async getMarkets(params?: {
+  series_ticker?: string;
+  event_ticker?: string;
+  status?: 'active' | 'closed' | 'settled';
+  limit?: string;
+}): Promise<GetMarketsResponse>
+```
+
+#### Parameters
+
+All parameters are optional. Omit all parameters to retrieve all markets.
+
+<ParamField path="series_ticker" type="string">
+  Filter by Kalshi series ticker (e.g., `"KXPREZ"`)
+</ParamField>
+
+<ParamField path="event_ticker" type="string">
+  Filter by Kalshi event ticker (e.g., `"KXFEDDECISION-26JAN"`)
+</ParamField>
+
+<ParamField path="status" type="string">
+  Filter by market status: `"active"`, `"closed"`, or `"settled"`
+</ParamField>
+
+<ParamField path="limit" type="string">
+  Maximum number of markets to return (max 200)
+</ParamField>
+
+#### Returns
+
+List of markets matching the filter criteria, including bid/ask prices, volume, and metadata.
+
+#### Examples
+
+**Get all active markets:**
+
+```typescript
+import { createBisonClient } from '@bison-markets/sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets' 
+});
+
+const response = await client.getMarkets({ status: 'active' });
+
+console.log(`Found ${response.markets.length} active markets`);
+
+response.markets.forEach(market => {
+  console.log(`${market.ticker}: ${market.title}`);
+  console.log(`  YES: ${market.yes_bid} / ${market.yes_ask}`);
+  console.log(`  NO: ${market.no_bid} / ${market.no_ask}`);
+  console.log(`  Volume: ${market.volume}`);
+});
+```
+
+**Filter by event ticker:**
+
+```typescript
+// Get all markets for a specific event
+const response = await client.getMarkets({
+  event_ticker: 'KXFEDDECISION-26JAN',
+  status: 'active'
+});
+
+console.log(`Event has ${response.markets.length} active markets`);
+
+// Find markets with high volume
+const popularMarkets = response.markets
+  .filter(m => m.volume && m.volume > 1000)
+  .sort((a, b) => (b.volume || 0) - (a.volume || 0));
+
+console.log('Most popular markets:');
+popularMarkets.slice(0, 5).forEach(m => {
+  console.log(`  ${m.ticker}: ${m.volume} volume`);
+});
+```
+
+**Filter by series:**
+
+```typescript
+// Get all presidential election markets
+const response = await client.getMarkets({
+  series_ticker: 'KXPREZ',
+  limit: '50'
+});
+
+console.log(`Found ${response.markets.length} presidential markets`);
+
+// Group by status
+const byStatus = response.markets.reduce((acc, market) => {
+  acc[market.status || 'unknown'] = (acc[market.status || 'unknown'] || 0) + 1;
+  return acc;
+}, {} as Record<string, number>);
+
+console.log('Markets by status:', byStatus);
+```
+
+**Find trading opportunities:**
+
+```typescript
+// Find markets with tight spreads
+const response = await client.getMarkets({ status: 'active' });
+
+const tightSpreads = response.markets
+  .filter(m => {
+    if (!m.yes_bid || !m.yes_ask) return false;
+    const spread = m.yes_ask - m.yes_bid;
+    return spread <= 0.02; // 2 cent spread or less
+  })
+  .map(m => ({
+    ticker: m.ticker,
+    title: m.title,
+    spread: m.yes_ask! - m.yes_bid!,
+    volume: m.volume || 0
+  }))
+  .sort((a, b) => a.spread - b.spread);
+
+console.log('Markets with tight spreads:');
+tightSpreads.slice(0, 10).forEach(m => {
+  console.log(`  ${m.ticker}: ${(m.spread * 100).toFixed(1)}¢ spread, ${m.volume} volume`);
+});
 ```
 
 ## Get Created Tokens
