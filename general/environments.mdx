@@ -1,6 +1,6 @@
 ---
 title: "Environments"
-description: "Production and testnet environments for Bison"
+description: "Mainnet and testnet environments for Bison"
 ---
 
 ## Overview
@@ -9,7 +9,7 @@ Bison offers two environments:
 
 | Environment | API URL | Chains |
 |-------------|---------|--------|
-| Production | `https://api.bison.markets` | Base, BSC |
+| Mainnet | `https://api.bison.markets` | Base, BSC |
 | Testnet | `https://testnet-api.bison.markets` | Base Sepolia, BSC Testnet |
 
 ## Withdrawal Flow
@@ -33,10 +33,10 @@ Withdrawals use a two-step process:
 | Environment | Time to Claimable |
 |-------------|-------------------|
 | Testnet | **≤5 minutes** (automatic) |
-| Production | **1-2 business days** |
+| Mainnet | **1-2 business days** |
 
 <Info>
-On testnet, withdrawals are processed automatically every 5 minutes. On production, withdrawals are processed daily.
+On testnet, withdrawals are processed automatically every 5 minutes. On mainnet, withdrawals are processed daily.
 </Info>
 
 ## Code Example
@@ -78,11 +78,11 @@ if (pending.totalAvailableUnclaimed > 0) {
 
 ## Environment Differences
 
-| Feature | Production | Testnet |
+| Feature | Mainnet | Testnet |
 |---------|------------|---------|
 | USDC | Real USDC | MockUSDC (mintable) |
 | Withdrawal processing | 1-2 business days | ≤5 minutes |
-| Kalshi API | Production Kalshi | Demo Kalshi |
+| Kalshi API | Mainnet Kalshi | Demo Kalshi |
 | Chain IDs | Base (8453), BSC (56) | Base Sepolia (84532), BSC Testnet (97) |
 
 ## Getting Testnet Tokens
