@@ -1,0 +1,7 @@
+---
+alwaysApply: false
+---
+
+When updating openapi.json, programmatically generate then format it. DO NOT write directly.
+
+Navigate to the right directory, then use use `curl <Bison API URL>/openapi | jq .`
