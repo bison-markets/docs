@@ -1,0 +1,177 @@
+---
+title: "Get User History"
+api: "GET /user/history"
+description: "Get unified transaction history including fills, settlements, deposits, and withdrawals"
+---
+
+import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+
+## Overview
+
+Returns a chronologically sorted list of all financial transactions for a user, including:
+
+- **Fills** - Order executions (buys and sells)
+- **Settlements** - Market settlement payouts
+- **Deposits** - USDC deposits from on-chain
+- **Withdrawals** - USDC withdrawals to on-chain
+
+Results are sorted by timestamp (newest first) and support filtering and pagination.
+
+<UusdcExplanation />
+
+<ParamField query="userId" type="string" required>
+  User's Ethereum wallet address (e.g., `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`)
+</ParamField>
+
+<ParamField query="type" type="string">
+  Filter by transaction type: `fill`, `settlement`, `deposit`, or `withdraw`
+</ParamField>
+
+<ParamField query="marketId" type="string">
+  Filter by market ID. Only applies to `fill` and `settlement` records.
+</ParamField>
+
+<ParamField query="startTime" type="number">
+  Start timestamp in milliseconds. Only returns records after this time.
+</ParamField>
+
+<ParamField query="endTime" type="number">
+  End timestamp in milliseconds. Only returns records before this time.
+</ParamField>
+
+<ParamField query="limit" type="number" default="50">
+  Maximum number of records per page. Min: 1, Max: 200.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor from a previous response's `pagination.nextCursor` field.
+</ParamField>
+
+## Response
+
+<ResponseField name="records" type="array" required>
+  Array of transaction records, sorted by timestamp (newest first).
+  
+  Each record has a `type` field that determines its shape:
+  
+  <Expandable title="Fill Record (type: 'fill')">
+    <ResponseField name="type" type="string">`"fill"`</ResponseField>
+    <ResponseField name="id" type="string">Unique fill ID</ResponseField>
+    <ResponseField name="orderId" type="string">Associated order ID</ResponseField>
+    <ResponseField name="tradeId" type="string">Kalshi trade ID</ResponseField>
+    <ResponseField name="marketId" type="string">Market ticker</ResponseField>
+    <ResponseField name="side" type="string">`"yes"` or `"no"`</ResponseField>
+    <ResponseField name="action" type="string">`"buy"` or `"sell"`</ResponseField>
+    <ResponseField name="quantity" type="number">Number of contracts filled</ResponseField>
+    <ResponseField name="priceUusdc" type="number">Price per contract in µUSDC</ResponseField>
+    <ResponseField name="totalUusdc" type="number">Total value in µUSDC</ResponseField>
+    <ResponseField name="feeUusdc" type="number">Fee charged in µUSDC</ResponseField>
+    <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
+  </Expandable>
+  
+  <Expandable title="Settlement Record (type: 'settlement')">
+    <ResponseField name="type" type="string">`"settlement"`</ResponseField>
+    <ResponseField name="id" type="string">Unique settlement ID</ResponseField>
+    <ResponseField name="marketId" type="string">Market ticker</ResponseField>
+    <ResponseField name="side" type="string">`"yes"` or `"no"` - the side held</ResponseField>
+    <ResponseField name="quantity" type="number">Number of contracts settled</ResponseField>
+    <ResponseField name="payoutUusdc" type="number">Payout amount in µUSDC (0 if lost)</ResponseField>
+    <ResponseField name="result" type="string">`"yes"` or `"no"` - the market result</ResponseField>
+    <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
+  </Expandable>
+  
+  <Expandable title="Deposit Record (type: 'deposit')">
+    <ResponseField name="type" type="string">`"deposit"`</ResponseField>
+    <ResponseField name="id" type="string">Unique deposit ID</ResponseField>
+    <ResponseField name="chain" type="string">Chain name (e.g., `"base"`, `"bsc"`)</ResponseField>
+    <ResponseField name="txHash" type="string">On-chain transaction hash</ResponseField>
+    <ResponseField name="amountUusdc" type="number">Deposit amount in µUSDC</ResponseField>
+    <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
+  </Expandable>
+  
+  <Expandable title="Withdraw Record (type: 'withdraw')">
+    <ResponseField name="type" type="string">`"withdraw"`</ResponseField>
+    <ResponseField name="id" type="string">Unique withdrawal ID</ResponseField>
+    <ResponseField name="chain" type="string">Chain name (e.g., `"base"`, `"bsc"`)</ResponseField>
+    <ResponseField name="amountUusdc" type="number">Withdrawal amount in µUSDC</ResponseField>
+    <ResponseField name="status" type="string">`"pending"`, `"fill-locked"`, `"unclaimed"`, or `"claimed"`</ResponseField>
+    <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="pagination" type="object" required>
+  <Expandable>
+    <ResponseField name="hasMore" type="boolean">Whether more records are available</ResponseField>
+    <ResponseField name="nextCursor" type="string">Cursor for fetching the next page (only present if `hasMore` is true)</ResponseField>
+  </Expandable>
+</ResponseField>
+
+<RequestExample>
+```bash Get all history
+curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+```
+
+```bash Filter by type
+curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266&type=fill"
+```
+
+```bash Filter by market
+curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266&marketId=KXFEDDECISION-26JAN-T425"
+```
+
+```bash With pagination
+curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266&limit=10&cursor=eyJ0IjoxNzM0..."
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "records": [
+    {
+      "type": "fill",
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "orderId": "abc123",
+      "tradeId": "trade-xyz",
+      "marketId": "KXFEDDECISION-26JAN-T425",
+      "side": "yes",
+      "action": "buy",
+      "quantity": 10,
+      "priceUusdc": 650000,
+      "totalUusdc": 6500000,
+      "feeUusdc": 6500,
+      "timestamp": 1734567890123
+    },
+    {
+      "type": "settlement",
+      "id": "550e8400-e29b-41d4-a716-446655440002",
+      "marketId": "KXFEDDECISION-26JAN-T400",
+      "side": "yes",
+      "quantity": 5,
+      "payoutUusdc": 5000000,
+      "result": "yes",
+      "timestamp": 1734567800000
+    },
+    {
+      "type": "deposit",
+      "id": "550e8400-e29b-41d4-a716-446655440003",
+      "chain": "base",
+      "txHash": "0xabc123...",
+      "amountUusdc": 100000000,
+      "timestamp": 1734567700000
+    }
+  ],
+  "pagination": {
+    "hasMore": true,
+    "nextCursor": "eyJ0IjoxNzM0NTY3NzAwMDAwLCJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMyIsInR5cGUiOiJkZXBvc2l0In0"
+  }
+}
+```
+
+```json 400
+{
+  "error": "Valid Ethereum address is required"
+}
+```
+</ResponseExample>
+

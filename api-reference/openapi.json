@@ -703,366 +703,300 @@
                 }
             }
         },
-        "/dev/info": {
+        "/user/history": {
             "get": {
                 "parameters": [
                     {
                         "schema": {
                             "type": "string",
-                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                            "pattern": "^0x[a-fA-F0-9]{40}$",
+                            "description": "User wallet address",
+                            "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
                         },
                         "required": true,
-                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                        "name": "x-dev-auth",
-                        "in": "header"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Dev account information",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "description": "Dev account ID"
-                                        },
-                                        "name": {
-                                            "type": "string",
-                                            "description": "Dev account name"
-                                        },
-                                        "email": {
-                                            "type": "string",
-                                            "description": "Dev account email"
-                                        },
-                                        "grossFeeBps": {
-                                            "type": "number",
-                                            "description": "Gross fee in basis points (100 = 1%)"
-                                        },
-                                        "grossBaseFeeUusdc": {
-                                            "type": "number",
-                                            "description": "Gross base fee per trade in µUSDC"
-                                        },
-                                        "bisonFeeCutBps": {
-                                            "type": "number",
-                                            "description": "Bison fee cut in basis points (100 = 1% of gross fee)"
-                                        },
-                                        "payoutChain": {
-                                            "type": "string",
-                                            "description": "Chain for fee payouts"
-                                        },
-                                        "signerAddress": {
-                                            "type": "string",
-                                            "description": "Address receiving fee payouts"
-                                        },
-                                        "createdAt": {
-                                            "type": "string",
-                                            "description": "Account creation timestamp (ISO 8601)"
-                                        }
-                                    },
-                                    "required": [
-                                        "id",
-                                        "name",
-                                        "email",
-                                        "grossFeeBps",
-                                        "grossBaseFeeUusdc",
-                                        "bisonFeeCutBps",
-                                        "payoutChain",
-                                        "signerAddress",
-                                        "createdAt"
-                                    ]
-                                }
-                            }
-                        }
+                        "description": "User wallet address",
+                        "name": "userId",
+                        "in": "query"
                     },
-                    "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "error"
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dev/fees": {
-            "get": {
-                "parameters": [
                     {
                         "schema": {
                             "type": "string",
-                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
-                        },
-                        "required": true,
-                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                        "name": "x-dev-auth",
-                        "in": "header"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Dev account fee balances",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "id": {
-                                            "type": "string",
-                                            "description": "Dev account ID"
-                                        },
-                                        "name": {
-                                            "type": "string",
-                                            "description": "Dev account name"
-                                        },
-                                        "pendingFeesUusdc": {
-                                            "type": "number",
-                                            "description": "Fees pending confirmation (µUSDC)"
-                                        },
-                                        "lockedFeesUusdc": {
-                                            "type": "number",
-                                            "description": "Fees locked for payout (µUSDC)"
-                                        },
-                                        "unclaimedFeesUusdc": {
-                                            "type": "number",
-                                            "description": "Fees available to claim (µUSDC)"
-                                        },
-                                        "payoutChain": {
-                                            "type": "string",
-                                            "description": "Chain for fee payouts"
-                                        },
-                                        "signerAddress": {
-                                            "type": "string",
-                                            "description": "Address receiving fee payouts"
-                                        }
-                                    },
-                                    "required": [
-                                        "id",
-                                        "name",
-                                        "pendingFeesUusdc",
-                                        "lockedFeesUusdc",
-                                        "unclaimedFeesUusdc",
-                                        "payoutChain",
-                                        "signerAddress"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "error"
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dev/fee-claim-authorization": {
-            "post": {
-                "parameters": [
-                    {
-                        "schema": {
-                            "type": "string",
-                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
-                        },
-                        "required": true,
-                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                        "name": "x-dev-auth",
-                        "in": "header"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Fee authorization generated successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "uuid": {
-                                            "type": "string",
-                                            "description": "Unique authorization ID"
-                                        },
-                                        "signature": {
-                                            "type": "string",
-                                            "description": "EIP-712 signature for the authorization"
-                                        },
-                                        "expiresAt": {
-                                            "type": "number",
-                                            "description": "Unix timestamp when authorization expires"
-                                        },
-                                        "amount": {
-                                            "type": "number",
-                                            "description": "Fee amount to claim in µUSDC"
-                                        },
-                                        "chain": {
-                                            "type": "string",
-                                            "description": "Chain to claim on"
-                                        },
-                                        "signerAddress": {
-                                            "type": "string",
-                                            "description": "Address receiving the payout"
-                                        }
-                                    },
-                                    "required": [
-                                        "uuid",
-                                        "signature",
-                                        "expiresAt",
-                                        "amount",
-                                        "chain",
-                                        "signerAddress"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request - no fees to claim or invalid request",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "error"
-                                    ]
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {
-                                        "error": {
-                                            "type": "string"
-                                        }
-                                    },
-                                    "required": [
-                                        "error"
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/dev/fee-claim-history": {
-            "get": {
-                "parameters": [
-                    {
-                        "schema": {
-                            "type": "string",
-                            "description": "Max claims to return (default 50)"
+                            "enum": [
+                                "fill",
+                                "settlement",
+                                "deposit",
+                                "withdraw"
+                            ],
+                            "description": "Filter by transaction type"
                         },
                         "required": false,
-                        "description": "Max claims to return (default 50)",
+                        "description": "Filter by transaction type",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by market ID (only applies to fills and settlements)"
+                        },
+                        "required": false,
+                        "description": "Filter by market ID (only applies to fills and settlements)",
+                        "name": "marketId",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Start timestamp (ms)"
+                        },
+                        "required": false,
+                        "description": "Start timestamp (ms)",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "End timestamp (ms)"
+                        },
+                        "required": false,
+                        "description": "End timestamp (ms)",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 200,
+                            "description": "Max records per page (default: 50, max: 200)"
+                        },
+                        "required": false,
+                        "description": "Max records per page (default: 50, max: 200)",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "schema": {
                             "type": "string",
-                            "description": "Pagination cursor (claim ID)"
+                            "description": "Pagination cursor from previous response"
                         },
                         "required": false,
-                        "description": "Pagination cursor (claim ID)",
+                        "description": "Pagination cursor from previous response",
                         "name": "cursor",
                         "in": "query"
-                    },
-                    {
-                        "schema": {
-                            "type": "string",
-                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
-                        },
-                        "required": true,
-                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
-                        "name": "x-dev-auth",
-                        "in": "header"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Fee claim history",
+                        "description": "User transaction history",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "type": "object",
                                     "properties": {
-                                        "claims": {
+                                        "records": {
                                             "type": "array",
                                             "items": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "id": {
-                                                        "type": "string"
+                                                "oneOf": [
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "fill"
+                                                                ]
+                                                            },
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "orderId": {
+                                                                "type": "string"
+                                                            },
+                                                            "tradeId": {
+                                                                "type": "string"
+                                                            },
+                                                            "marketId": {
+                                                                "type": "string"
+                                                            },
+                                                            "side": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "yes",
+                                                                    "no"
+                                                                ]
+                                                            },
+                                                            "action": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "buy",
+                                                                    "sell"
+                                                                ]
+                                                            },
+                                                            "quantity": {
+                                                                "type": "number"
+                                                            },
+                                                            "priceUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "totalUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "feeUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "timestamp": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "id",
+                                                            "orderId",
+                                                            "tradeId",
+                                                            "marketId",
+                                                            "side",
+                                                            "action",
+                                                            "quantity",
+                                                            "priceUusdc",
+                                                            "totalUusdc",
+                                                            "feeUusdc",
+                                                            "timestamp"
+                                                        ]
                                                     },
-                                                    "chain": {
-                                                        "type": "string"
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "settlement"
+                                                                ]
+                                                            },
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "marketId": {
+                                                                "type": "string"
+                                                            },
+                                                            "side": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "yes",
+                                                                    "no"
+                                                                ]
+                                                            },
+                                                            "quantity": {
+                                                                "type": "number"
+                                                            },
+                                                            "payoutUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "result": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "yes",
+                                                                    "no"
+                                                                ]
+                                                            },
+                                                            "timestamp": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "id",
+                                                            "marketId",
+                                                            "side",
+                                                            "quantity",
+                                                            "payoutUusdc",
+                                                            "result",
+                                                            "timestamp"
+                                                        ]
                                                     },
-                                                    "amountUusdc": {
-                                                        "type": "number"
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "deposit"
+                                                                ]
+                                                            },
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "chain": {
+                                                                "type": "string"
+                                                            },
+                                                            "txHash": {
+                                                                "type": "string"
+                                                            },
+                                                            "amountUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "timestamp": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "id",
+                                                            "chain",
+                                                            "txHash",
+                                                            "amountUusdc",
+                                                            "timestamp"
+                                                        ]
                                                     },
-                                                    "payoutAddress": {
-                                                        "type": "string"
-                                                    },
-                                                    "claimedAt": {
-                                                        "type": "string"
+                                                    {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "type": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "withdraw"
+                                                                ]
+                                                            },
+                                                            "id": {
+                                                                "type": "string"
+                                                            },
+                                                            "chain": {
+                                                                "type": "string"
+                                                            },
+                                                            "amountUusdc": {
+                                                                "type": "number"
+                                                            },
+                                                            "status": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "pending",
+                                                                    "fill-locked",
+                                                                    "unclaimed",
+                                                                    "claimed"
+                                                                ]
+                                                            },
+                                                            "timestamp": {
+                                                                "type": "number"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "id",
+                                                            "chain",
+                                                            "amountUusdc",
+                                                            "status",
+                                                            "timestamp"
+                                                        ]
                                                     }
-                                                },
-                                                "required": [
-                                                    "id",
-                                                    "chain",
-                                                    "amountUusdc",
-                                                    "payoutAddress",
-                                                    "claimedAt"
                                                 ]
                                             }
                                         },
                                         "pagination": {
                                             "type": "object",
                                             "properties": {
-                                                "total": {
-                                                    "type": "number"
-                                                },
                                                 "hasMore": {
                                                     "type": "boolean"
                                                 },
@@ -1071,21 +1005,167 @@
                                                 }
                                             },
                                             "required": [
-                                                "total",
                                                 "hasMore"
                                             ]
                                         }
                                     },
                                     "required": [
-                                        "claims",
+                                        "records",
                                         "pagination"
                                     ]
                                 }
                             }
                         }
                     },
-                    "401": {
-                        "description": "Unauthorized",
+                    "400": {
+                        "description": "Invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/pnl": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^0x[a-fA-F0-9]{40}$",
+                            "description": "User wallet address",
+                            "example": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+                        },
+                        "required": true,
+                        "description": "User wallet address",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Filter by market ID"
+                        },
+                        "required": false,
+                        "description": "Filter by market ID",
+                        "name": "marketId",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Start timestamp (ms)"
+                        },
+                        "required": false,
+                        "description": "Start timestamp (ms)",
+                        "name": "startTime",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "End timestamp (ms)"
+                        },
+                        "required": false,
+                        "description": "End timestamp (ms)",
+                        "name": "endTime",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "hour",
+                                "day",
+                                "all"
+                            ],
+                            "description": "Time-series granularity (default: all - no time series)"
+                        },
+                        "required": false,
+                        "description": "Time-series granularity (default: all - no time series)",
+                        "name": "granularity",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User PNL summary",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "totalDeposits": {
+                                            "type": "number",
+                                            "description": "Total deposits in µUSDC"
+                                        },
+                                        "totalWithdrawals": {
+                                            "type": "number",
+                                            "description": "Total withdrawals in µUSDC"
+                                        },
+                                        "realizedPnl": {
+                                            "type": "number",
+                                            "description": "Realized PNL in µUSDC"
+                                        },
+                                        "unrealizedPnl": {
+                                            "type": "number",
+                                            "description": "Unrealized PNL in µUSDC (estimated)"
+                                        },
+                                        "netPnl": {
+                                            "type": "number",
+                                            "description": "Net PNL (realized + unrealized) in µUSDC"
+                                        },
+                                        "totalFeesPaid": {
+                                            "type": "number",
+                                            "description": "Total fees paid in µUSDC"
+                                        },
+                                        "timeSeries": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "timestamp": {
+                                                        "type": "number"
+                                                    },
+                                                    "cumulativePnl": {
+                                                        "type": "number"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "timestamp",
+                                                    "cumulativePnl"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "totalDeposits",
+                                        "totalWithdrawals",
+                                        "realizedPnl",
+                                        "unrealizedPnl",
+                                        "netPnl",
+                                        "totalFeesPaid"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2257,6 +2337,408 @@
                     },
                     "500": {
                         "description": "Failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dev/info": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                        },
+                        "required": true,
+                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                        "name": "x-dev-auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dev account information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Dev account ID"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Dev account name"
+                                        },
+                                        "email": {
+                                            "type": "string",
+                                            "description": "Dev account email"
+                                        },
+                                        "grossFeeBps": {
+                                            "type": "number",
+                                            "description": "Gross fee in basis points (100 = 1%)"
+                                        },
+                                        "grossBaseFeeUusdc": {
+                                            "type": "number",
+                                            "description": "Gross base fee per trade in µUSDC"
+                                        },
+                                        "bisonFeeCutBps": {
+                                            "type": "number",
+                                            "description": "Bison fee cut in basis points (100 = 1% of gross fee)"
+                                        },
+                                        "payoutChain": {
+                                            "type": "string",
+                                            "description": "Chain for fee payouts"
+                                        },
+                                        "signerAddress": {
+                                            "type": "string",
+                                            "description": "Address receiving fee payouts"
+                                        },
+                                        "createdAt": {
+                                            "type": "string",
+                                            "description": "Account creation timestamp (ISO 8601)"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "name",
+                                        "email",
+                                        "grossFeeBps",
+                                        "grossBaseFeeUusdc",
+                                        "bisonFeeCutBps",
+                                        "payoutChain",
+                                        "signerAddress",
+                                        "createdAt"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dev/fees": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                        },
+                        "required": true,
+                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                        "name": "x-dev-auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dev account fee balances",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string",
+                                            "description": "Dev account ID"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Dev account name"
+                                        },
+                                        "pendingFeesUusdc": {
+                                            "type": "number",
+                                            "description": "Fees pending confirmation (µUSDC)"
+                                        },
+                                        "lockedFeesUusdc": {
+                                            "type": "number",
+                                            "description": "Fees locked for payout (µUSDC)"
+                                        },
+                                        "unclaimedFeesUusdc": {
+                                            "type": "number",
+                                            "description": "Fees available to claim (µUSDC)"
+                                        },
+                                        "payoutChain": {
+                                            "type": "string",
+                                            "description": "Chain for fee payouts"
+                                        },
+                                        "signerAddress": {
+                                            "type": "string",
+                                            "description": "Address receiving fee payouts"
+                                        }
+                                    },
+                                    "required": [
+                                        "id",
+                                        "name",
+                                        "pendingFeesUusdc",
+                                        "lockedFeesUusdc",
+                                        "unclaimedFeesUusdc",
+                                        "payoutChain",
+                                        "signerAddress"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dev/fee-claim-authorization": {
+            "post": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                        },
+                        "required": true,
+                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                        "name": "x-dev-auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fee authorization generated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "uuid": {
+                                            "type": "string",
+                                            "description": "Unique authorization ID"
+                                        },
+                                        "signature": {
+                                            "type": "string",
+                                            "description": "EIP-712 signature for the authorization"
+                                        },
+                                        "expiresAt": {
+                                            "type": "number",
+                                            "description": "Unix timestamp when authorization expires"
+                                        },
+                                        "amount": {
+                                            "type": "number",
+                                            "description": "Fee amount to claim in µUSDC"
+                                        },
+                                        "chain": {
+                                            "type": "string",
+                                            "description": "Chain to claim on"
+                                        },
+                                        "signerAddress": {
+                                            "type": "string",
+                                            "description": "Address receiving the payout"
+                                        }
+                                    },
+                                    "required": [
+                                        "uuid",
+                                        "signature",
+                                        "expiresAt",
+                                        "amount",
+                                        "chain",
+                                        "signerAddress"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - no fees to claim or invalid request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/dev/fee-claim-history": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Max claims to return (default 50)"
+                        },
+                        "required": false,
+                        "description": "Max claims to return (default 50)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Pagination cursor (claim ID)"
+                        },
+                        "required": false,
+                        "description": "Pagination cursor (claim ID)",
+                        "name": "cursor",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                            "example": "{\"devAccountId\":\"my-dev-account\",\"action\":\"info\",\"expiry\":1734567890,\"signature\":\"0x...\"}"
+                        },
+                        "required": true,
+                        "description": "JSON-encoded auth payload: { devAccountId, action, expiry, signature }. Signature is EIP-712 typed data signed by the dev account signer.",
+                        "name": "x-dev-auth",
+                        "in": "header"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Fee claim history",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "claims": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "chain": {
+                                                        "type": "string"
+                                                    },
+                                                    "amountUusdc": {
+                                                        "type": "number"
+                                                    },
+                                                    "payoutAddress": {
+                                                        "type": "string"
+                                                    },
+                                                    "claimedAt": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "id",
+                                                    "chain",
+                                                    "amountUusdc",
+                                                    "payoutAddress",
+                                                    "claimedAt"
+                                                ]
+                                            }
+                                        },
+                                        "pagination": {
+                                            "type": "object",
+                                            "properties": {
+                                                "total": {
+                                                    "type": "number"
+                                                },
+                                                "hasMore": {
+                                                    "type": "boolean"
+                                                },
+                                                "nextCursor": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "total",
+                                                "hasMore"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "claims",
+                                        "pagination"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "content": {
                             "application/json": {
                                 "schema": {

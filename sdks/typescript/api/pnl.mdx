@@ -1,0 +1,281 @@
+---
+title: "PNL & History"
+description: "Track profit/loss and view transaction history"
+---
+
+import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+
+## Overview
+
+The SDK provides methods to track user financial activity:
+
+- `getUserPnl` - Get profit/loss summary with optional time-series
+- `getUserHistory` - Get unified transaction history (fills, settlements, deposits, withdrawals)
+
+<UusdcExplanation />
+
+## Getting PNL
+
+### `getUserPnl`
+
+Get a comprehensive PNL summary for a user.
+
+```typescript
+async getUserPnl(
+  userId: string,
+  params?: GetUserPnlParams
+): Promise<GetUserPnlResponse>
+```
+
+#### Parameters
+
+<ParamField path="userId" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="params" type="object">
+  Optional filtering parameters
+</ParamField>
+
+<Expandable title="params properties">
+  <ParamField path="marketId" type="string">
+    Filter to a specific market
+  </ParamField>
+
+  <ParamField path="startTime" type="number">
+    Start timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="endTime" type="number">
+    End timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="granularity" type="string">
+    Time-series granularity: `"hour"`, `"day"`, or `"all"` (default, no time series)
+  </ParamField>
+</Expandable>
+
+#### Response
+
+```typescript
+{
+  totalDeposits: number;      // Total deposits in µUSDC
+  totalWithdrawals: number;   // Total withdrawals in µUSDC
+  realizedPnl: number;        // Realized PNL in µUSDC
+  unrealizedPnl: number;      // Unrealized PNL in µUSDC
+  netPnl: number;             // Net PNL (realized + unrealized)
+  totalFeesPaid: number;      // Total fees paid in µUSDC
+  timeSeries?: {              // Only if granularity is hour/day
+    timestamp: number;
+    cumulativePnl: number;
+  }[];
+}
+```
+
+#### Examples
+
+**Basic PNL summary:**
+
+```typescript
+import { createBisonClient } from '@bison-markets/sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets' 
+});
+
+const pnl = await client.getUserPnl(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+);
+
+// Display in dollars
+console.log(`Net P&L: $${(pnl.netPnl / 1_000_000).toFixed(2)}`);
+console.log(`Realized: $${(pnl.realizedPnl / 1_000_000).toFixed(2)}`);
+console.log(`Unrealized: $${(pnl.unrealizedPnl / 1_000_000).toFixed(2)}`);
+console.log(`Fees Paid: $${(pnl.totalFeesPaid / 1_000_000).toFixed(2)}`);
+```
+
+**PNL with daily time series (for charts):**
+
+```typescript
+const pnl = await client.getUserPnl(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { granularity: 'day' }
+);
+
+// Build chart data
+const chartData = pnl.timeSeries?.map(point => ({
+  date: new Date(point.timestamp),
+  pnl: point.cumulativePnl / 1_000_000 // Convert to dollars
+})) ?? [];
+```
+
+**PNL for a specific market:**
+
+```typescript
+const marketPnl = await client.getUserPnl(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { marketId: 'KXFEDDECISION-26JAN-T425' }
+);
+
+console.log(`Market P&L: $${(marketPnl.realizedPnl / 1_000_000).toFixed(2)}`);
+```
+
+**PNL for a date range:**
+
+```typescript
+const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+const weeklyPnl = await client.getUserPnl(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { 
+    startTime: oneWeekAgo,
+    granularity: 'hour'
+  }
+);
+```
+
+## Getting Transaction History
+
+### `getUserHistory`
+
+Get a chronological list of all financial transactions.
+
+```typescript
+async getUserHistory(
+  userId: string,
+  params?: GetUserHistoryParams
+): Promise<GetUserHistoryResponse>
+```
+
+#### Parameters
+
+<ParamField path="userId" type="string" required>
+  User's Ethereum address
+</ParamField>
+
+<ParamField path="params" type="object">
+  Optional filtering and pagination
+</ParamField>
+
+<Expandable title="params properties">
+  <ParamField path="type" type="string">
+    Filter by type: `"fill"`, `"settlement"`, `"deposit"`, or `"withdraw"`
+  </ParamField>
+
+  <ParamField path="marketId" type="string">
+    Filter by market ID (only for fills and settlements)
+  </ParamField>
+
+  <ParamField path="startTime" type="number">
+    Start timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="endTime" type="number">
+    End timestamp (milliseconds)
+  </ParamField>
+
+  <ParamField path="limit" type="number">
+    Max records per page (default: 50, max: 200)
+  </ParamField>
+
+  <ParamField path="cursor" type="string">
+    Pagination cursor from previous response
+  </ParamField>
+</Expandable>
+
+#### Response
+
+Returns an array of transaction records, each with a `type` discriminator:
+
+```typescript
+{
+  records: (FillRecord | SettlementRecord | DepositRecord | WithdrawRecord)[];
+  pagination: {
+    hasMore: boolean;
+    nextCursor?: string;
+  };
+}
+```
+
+#### Examples
+
+**Get all recent activity:**
+
+```typescript
+const { records } = await client.getUserHistory(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+);
+
+records.forEach(record => {
+  const date = new Date(record.timestamp).toLocaleDateString();
+  
+  switch (record.type) {
+    case 'fill':
+      console.log(`${date}: ${record.action} ${record.quantity} ${record.side} @ $${record.priceUusdc / 1_000_000}`);
+      break;
+    case 'settlement':
+      const won = record.payoutUusdc > 0;
+      console.log(`${date}: Settlement ${won ? 'WON' : 'LOST'} - $${record.payoutUusdc / 1_000_000}`);
+      break;
+    case 'deposit':
+      console.log(`${date}: Deposited $${record.amountUusdc / 1_000_000}`);
+      break;
+    case 'withdraw':
+      console.log(`${date}: Withdrew $${record.amountUusdc / 1_000_000} (${record.status})`);
+      break;
+  }
+});
+```
+
+**Get only fills for a market:**
+
+```typescript
+const { records } = await client.getUserHistory(
+  '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+  { 
+    type: 'fill',
+    marketId: 'KXFEDDECISION-26JAN-T425'
+  }
+);
+```
+
+**Paginate through all history:**
+
+```typescript
+let cursor: string | undefined;
+const allRecords = [];
+
+do {
+  const result = await client.getUserHistory(
+    '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
+    { limit: 100, cursor }
+  );
+  
+  allRecords.push(...result.records);
+  cursor = result.pagination.nextCursor;
+} while (cursor);
+
+console.log(`Total transactions: ${allRecords.length}`);
+```
+
+## Error Handling
+
+```typescript
+try {
+  const pnl = await client.getUserPnl('0x...');
+  console.log('Net PNL:', pnl.netPnl);
+} catch (error) {
+  if (error instanceof Error) {
+    console.error('Failed to get PNL:', error.message);
+  }
+}
+```
+
+## Important Notes
+
+- All monetary values are in µUSDC (1 USD = 1,000,000 µUSDC)
+- When filtering by `marketId`, deposits and withdrawals are excluded from PNL calculations
+- Transaction history is sorted newest-first by default
+- Unrealized PNL is estimated based on position cost basis
+- Time series data points represent cumulative PNL at each interval
+

@@ -41,6 +41,7 @@
                   "sdks/typescript/api/events",
                   "sdks/typescript/api/deposits",
                   "sdks/typescript/api/trades",
+                  "sdks/typescript/api/pnl",
                   "sdks/typescript/api/tokenization",
                   "sdks/typescript/api/dev-fees"
                 ]
@@ -70,8 +71,10 @@
             "group": "Account",
             "pages": [
               "api-reference/endpoint/deposited-balance",
-              "api-reference/endpoint/schedule-withdraw",
+              "api-reference/endpoint/user-history",
+              "api-reference/endpoint/user-pnl",
               "api-reference/endpoint/pending-withdraws",
+              "api-reference/endpoint/schedule-withdraw",
               "api-reference/endpoint/get-withdraw-authorization"
             ]
           },
