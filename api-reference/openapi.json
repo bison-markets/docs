@@ -2861,6 +2861,150 @@
                     }
                 }
             }
+        },
+        "/kalshi/markets/{marketTicker}/history": {
+            "get": {
+                "parameters": [
+                    {
+                        "schema": {
+                            "type": "string",
+                            "description": "Market ticker",
+                            "example": "KXBTC-25JAN03-B101"
+                        },
+                        "required": true,
+                        "description": "Market ticker",
+                        "name": "marketTicker",
+                        "in": "path"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Start timestamp (Unix seconds). Defaults to 30 days ago.",
+                            "example": 1704067200
+                        },
+                        "required": false,
+                        "description": "Start timestamp (Unix seconds). Defaults to 30 days ago.",
+                        "name": "start_ts",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "End timestamp (Unix seconds). Defaults to now.",
+                            "example": 1704153600
+                        },
+                        "required": false,
+                        "description": "End timestamp (Unix seconds). Defaults to now.",
+                        "name": "end_ts",
+                        "in": "query"
+                    },
+                    {
+                        "schema": {
+                            "type": "number",
+                            "nullable": true,
+                            "description": "Candle interval in minutes. Defaults to 60 (1 hour).",
+                            "example": 60
+                        },
+                        "required": false,
+                        "description": "Candle interval in minutes. Defaults to 60 (1 hour).",
+                        "name": "period_interval",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Price history for the market",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "history": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "timestamp": {
+                                                        "type": "number",
+                                                        "description": "Unix timestamp (seconds) at end of period"
+                                                    },
+                                                    "yes_price": {
+                                                        "type": "number",
+                                                        "description": "Mean YES price for the period (0-1 probability, VWAP)"
+                                                    }
+                                                },
+                                                "required": [
+                                                    "timestamp",
+                                                    "yes_price"
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "history"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Market not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "error"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

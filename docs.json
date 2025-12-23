@@ -82,6 +82,7 @@
             "group": "Kalshi Market Data",
             "pages": [
               "api-reference/endpoint/kalshi-markets",
+              "api-reference/endpoint/kalshi-market-history",
               "api-reference/endpoint/kalshi-orders",
               "api-reference/endpoint/kalshi-positions"
             ]

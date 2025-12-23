@@ -306,6 +306,103 @@ tightSpreads.slice(0, 10).forEach(m => {
 });
 ```
 
+## Get Market Price History
+
+Retrieve historical YES probability for a market. Returns mean (VWAP) price per candlestick period, matching Kalshi's official price charts.
+
+### `getMarketHistory`
+
+```typescript
+async getMarketHistory(
+  marketTicker: string,
+  params?: {
+    start_ts?: number;
+    end_ts?: number;
+    period_interval?: number;
+  }
+): Promise<GetMarketHistoryResponse>
+```
+
+#### Parameters
+
+<ParamField path="marketTicker" type="string" required>
+  Market ticker (e.g., `"KXBTC-25JAN03-B101"`)
+</ParamField>
+
+<ParamField path="start_ts" type="number">
+  Start timestamp in Unix seconds. Defaults to 30 days ago.
+</ParamField>
+
+<ParamField path="end_ts" type="number">
+  End timestamp in Unix seconds. Defaults to now.
+</ParamField>
+
+<ParamField path="period_interval" type="number">
+  Candle interval in minutes (e.g., `60` for 1 hour, `1440` for 1 day). Defaults to `60`.
+</ParamField>
+
+#### Returns
+
+Array of price points, each containing:
+- `timestamp` - Unix timestamp (seconds) at end of period
+- `yes_price` - Mean YES price for the period (0-1 probability, VWAP)
+
+#### Examples
+
+**Get last 24 hours (default):**
+
+```typescript
+import { createBisonClient } from '@bison-markets/sdk-ts';
+
+const client = createBisonClient({ 
+  baseUrl: 'https://api.bison.markets' 
+});
+
+const { history } = await client.getMarketHistory('KXBTC-25JAN03-B101');
+
+console.log(`${history.length} data points`);
+
+history.forEach(point => {
+  const date = new Date(point.timestamp * 1000);
+  console.log(`${date.toISOString()}: ${(point.yes_price * 100).toFixed(1)}%`);
+});
+```
+
+**Get last 7 days with daily intervals:**
+
+```typescript
+const now = Math.floor(Date.now() / 1000);
+const weekAgo = now - 7 * 24 * 60 * 60;
+
+const { history } = await client.getMarketHistory('KXBTC-25JAN03-B101', {
+  start_ts: weekAgo,
+  end_ts: now,
+  period_interval: 1440, // 1 day in minutes
+});
+
+console.log('Daily prices for the last week:');
+history.forEach(point => {
+  const date = new Date(point.timestamp * 1000).toLocaleDateString();
+  console.log(`${date}: ${(point.yes_price * 100).toFixed(1)}%`);
+});
+```
+
+**Build a simple chart data structure:**
+
+```typescript
+const { history } = await client.getMarketHistory('KXBTC-25JAN03-B101', {
+  period_interval: 60, // 1 hour in minutes
+});
+
+const chartData = history.map(point => ({
+  x: new Date(point.timestamp * 1000),
+  y: point.yes_price * 100, // Convert to percentage
+}));
+
+// Use with your charting library (Chart.js, Recharts, etc.)
+console.log('Chart data ready:', chartData.length, 'points');
+```
+
 ## Get Created Tokens
 
 Retrieve information about position tokens that have been created on-chain.
