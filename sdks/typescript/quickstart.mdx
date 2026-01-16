@@ -4,6 +4,7 @@ description: "Get up and running with the Bison TS SDK"
 ---
 
 import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import BigIntAmounts from '/snippets/bigint-amounts.mdx';
 
 ## Installation
 
@@ -16,9 +17,10 @@ npm i github:bison-markets/sdk-ts
 ## Basic Usage
 
 <UusdcExplanation />
+<BigIntAmounts />
 
 ```typescript example.ts
-import { createBisonClient } from '@bison-markets/sdk-ts';
+import { createBisonClient, usdcToUusdc, uusdcToUsdc } from '@bison-markets/sdk-ts';
 import { createWalletClient, createPublicClient, http, custom } from 'viem';
 import { base } from 'viem/chains';
 
@@ -44,8 +46,8 @@ const txHash = await client.executeDepositFlow({
   walletClient,
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
-  chain: 'base', // Addresses are auto-resolved and cached
-  amountUusdc: 100_000_000, // 100 USDC
+  chain: 'base',
+  amountUusdc: usdcToUusdc(100), // Convert 100 USDC to µUSDC
 });
 
 console.log('Deposited! Transaction:', txHash);
@@ -55,7 +57,7 @@ const disconnect = client.listen(
   '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   (event) => {
     if (event.type === 'usdc_deposited') {
-      console.log('USDC deposit confirmed:', event.uusdcAmount / 1_000_000, 'USDC');
+      console.log('USDC deposit confirmed:', uusdcToUsdc(event.uusdcAmount), 'USDC');
     } else if (event.type === 'order_filled') {
       console.log('Order filled:', event.orderId);
     }
@@ -88,5 +90,26 @@ const client = createBisonClient({
 ```
 
 All orders placed through this client will be associated with your dev account, allowing you to earn a portion of trading fees. See the [Developer Accounts](/general/dev-accounts) guide for more information on how to get a dev account and configure fee structures.
+
+## Working with Amounts
+
+The SDK provides utility functions for working with µUSDC amounts:
+
+```typescript
+import { usdcToUusdc, uusdcToUsdc, parseBigInt } from '@bison-markets/sdk-ts';
+
+// Convert USDC to µUSDC (returns bigint)
+const amount = usdcToUusdc(100);      // 100000000n
+const amount2 = usdcToUusdc("1.50");  // 1500000n
+
+// Convert µUSDC to USDC display string
+const display = uusdcToUsdc(1500000n); // "1.500000"
+const display2 = uusdcToUsdc("1500000"); // "1.500000"
+
+// Parse various formats to bigint
+const parsed = parseBigInt("1000000");  // 1000000n
+const parsed2 = parseBigInt(1000000);   // 1000000n
+const parsed3 = parseBigInt(1000000n);  // 1000000n
+```
 
 You can find detailed usage information on the next few pages.
