@@ -3,7 +3,8 @@ title: "Trading"
 description: "Placing orders and managing positions"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -14,7 +15,7 @@ The SDK provides high-level methods for trading on Kalshi markets:
 - `executeMintFlow` / `executeBurnFlow` - Create/destroy position tokens
 - `getUserOrders` / `getUserPositions` - Query user's orders and positions
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Developer Accounts
 
@@ -34,8 +35,8 @@ await client.executeBuyFlow({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
-  number: 10,
-  priceUusdc: 650000,
+  ccontracts: '1000', // 10.00 contracts * 100
+  priceUusdc: '650000',
 });
 ```
 
@@ -45,8 +46,8 @@ You can also override the dev account for specific orders when using the lower-l
 await client.placeOrder({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
-  number: 10,
-  priceUusdc: 650000,
+  ccontracts: '1000', // 10.00 contracts * 100
+  priceUusdc: '650000',
   action: 'buy',
   side: 'yes',
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
@@ -73,8 +74,8 @@ async executeBuyFlow(params: {
   chain: string;
   marketId: string;
   side: 'yes' | 'no';
-  number: number;
-  priceUusdc: number;
+  ccontracts: string;
+  priceUusdc: string;
   onEvent?: (event: BisonEvent) => void;
   onError?: (error: Error) => void;
 }): Promise<{ disconnect: () => void; txHash: `0x${string}` | null }>
@@ -106,12 +107,13 @@ async executeBuyFlow(params: {
   Position side: `"yes"` or `"no"`
 </ParamField>
 
-<ParamField path="number" type="number" required>
-  Number of contracts to buy
+<ParamField path="ccontracts" type="string" required>
+  Number of ccontracts as an integer string (e.g., `"1050"` for 10.50 contracts at precision 2)
 </ParamField>
+Tip: use `contractsToCcontracts("10.50", 2).toString()` from the SDK to convert a fixed-point contracts string.
 
-<ParamField path="priceUusdc" type="number" required>
-  Limit price in µUSDC
+<ParamField path="priceUusdc" type="string" required>
+  Limit price in µUSDC as an integer string
 </ParamField>
 
 <ParamField path="onEvent" type="function">
@@ -157,8 +159,8 @@ const result = await client.executeBuyFlow({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
-  number: 10,
-  priceUusdc: 650000, // $0.65 * 10^6
+  ccontracts: '1000', // 10.00 contracts * 100
+  priceUusdc: '650000', // $0.65 * 10^6
   onEvent: (event) => {
     if (event.type === 'order_placed') {
       console.log('Order placed successfully:', event.orderId);
@@ -187,8 +189,8 @@ async executeSellFlow(params: {
   chain: string;
   marketId: string;
   side: 'yes' | 'no';
-  number: number;
-  priceUusdc: number;
+  ccontracts: string;
+  priceUusdc: string;
   onEvent?: (event: BisonEvent) => void;
   onError?: (error: Error) => void;
 }): Promise<{ disconnect: () => void; txHash: `0x${string}` | null }>
@@ -205,8 +207,8 @@ const result = await client.executeSellFlow({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'no',
-  number: 5,
-  priceUusdc: 400000, // $0.40 * 10^6
+  ccontracts: '500', // 5.00 contracts * 100
+  priceUusdc: '400000', // $0.40 * 10^6
 });
 ```
 
@@ -349,7 +351,9 @@ const { orders } = await client.getUserOrders(
 
 console.log('Open orders:');
 orders.forEach(order => {
-  console.log(`${order.action} ${order.requestedQuantity} ${order.side} @ $${order.priceUusdc / 1_000_000}`);
+  const requestedContracts = Number(order.requestedCcontracts) / 100;
+  const price = Number(order.priceUusdc) / 1_000_000;
+  console.log(`${order.action} ${requestedContracts} ${order.side} @ $${price}`);
   console.log(`  Market: ${order.marketId}`);
   console.log(`  Order ID: ${order.kalshiOrderId}`);
 });
@@ -427,7 +431,8 @@ const { positions } = await client.getUserPositions(
 console.log('Current positions:');
 positions.forEach(position => {
   console.log(`Market: ${position.marketId}`);
-  console.log(`  ${position.side.toUpperCase()}: ${position.quantity} contracts`);
+  const contracts = Number(position.ccontracts) / 100;
+  console.log(`  ${position.side.toUpperCase()}: ${contracts} contracts`);
 });
 ```
 
@@ -517,8 +522,8 @@ try {
     chain: 'base',
     marketId: 'KXFEDDECISION-26JAN-T425',
     side: 'yes',
-    number: 10,
-    priceUusdc: 650000,
+    ccontracts: '1000', // 10.00 contracts * 100
+    priceUusdc: '650000',
   });
 } catch (error) {
   if (error instanceof Error) {
@@ -543,4 +548,3 @@ try {
 - WebSocket connection is automatically established for buy/sell flows
 - Always call `disconnect()` to clean up WebSocket connections
 - Developer account IDs set at the client level are automatically applied to all orders
-

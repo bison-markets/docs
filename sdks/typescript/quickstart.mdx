@@ -3,7 +3,8 @@ title: "Quick Start"
 description: "Get up and running with the Bison TS SDK"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 import BigIntAmounts from '/snippets/bigint-amounts.mdx';
 
 ## Installation
@@ -16,7 +17,7 @@ npm i github:bison-markets/sdk-ts
 
 ## Basic Usage
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 <BigIntAmounts />
 
 ```typescript example.ts
@@ -47,7 +48,7 @@ const txHash = await client.executeDepositFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  amountUusdc: usdcToUusdc(100), // Convert 100 USDC to µUSDC
+  amountUusdc: usdcToUusdc(100).toString(), // Convert 100 USDC to µUSDC
 });
 
 console.log('Deposited! Transaction:', txHash);

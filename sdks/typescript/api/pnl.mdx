@@ -3,7 +3,8 @@ title: "PNL & History"
 description: "Track profit/loss and view transaction history"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -12,7 +13,7 @@ The SDK provides methods to track user financial activity:
 - `getUserPnl` - Get profit/loss summary with optional time-series
 - `getUserHistory` - Get unified transaction history (fills, settlements, deposits, withdrawals)
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Getting PNL
 
@@ -59,15 +60,15 @@ async getUserPnl(
 
 ```typescript
 {
-  totalDeposits: number;      // Total deposits in µUSDC
-  totalWithdrawals: number;   // Total withdrawals in µUSDC
-  realizedPnl: number;        // Realized PNL in µUSDC
-  unrealizedPnl: number;      // Unrealized PNL in µUSDC
-  netPnl: number;             // Net PNL (realized + unrealized)
-  totalFeesPaid: number;      // Total fees paid in µUSDC
+  totalDeposits: string;      // Total deposits in µUSDC
+  totalWithdrawals: string;   // Total withdrawals in µUSDC
+  realizedPnl: string;        // Realized PNL in µUSDC
+  unrealizedPnl: string;      // Unrealized PNL in µUSDC
+  netPnl: string;             // Net PNL (realized + unrealized)
+  totalFeesPaid: string;      // Total fees paid in µUSDC
   timeSeries?: {              // Only if granularity is hour/day
     timestamp: number;
-    cumulativePnl: number;
+    cumulativePnl: string;
   }[];
 }
 ```
@@ -77,7 +78,7 @@ async getUserPnl(
 **Basic PNL summary:**
 
 ```typescript
-import { createBisonClient } from '@bison-markets/sdk-ts';
+import { createBisonClient, uusdcToUsdc } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets' 
@@ -88,10 +89,10 @@ const pnl = await client.getUserPnl(
 );
 
 // Display in dollars
-console.log(`Net P&L: $${(pnl.netPnl / 1_000_000).toFixed(2)}`);
-console.log(`Realized: $${(pnl.realizedPnl / 1_000_000).toFixed(2)}`);
-console.log(`Unrealized: $${(pnl.unrealizedPnl / 1_000_000).toFixed(2)}`);
-console.log(`Fees Paid: $${(pnl.totalFeesPaid / 1_000_000).toFixed(2)}`);
+console.log(`Net P&L: $${uusdcToUsdc(pnl.netPnl)}`);
+console.log(`Realized: $${uusdcToUsdc(pnl.realizedPnl)}`);
+console.log(`Unrealized: $${uusdcToUsdc(pnl.unrealizedPnl)}`);
+console.log(`Fees Paid: $${uusdcToUsdc(pnl.totalFeesPaid)}`);
 ```
 
 **PNL with daily time series (for charts):**
@@ -105,7 +106,7 @@ const pnl = await client.getUserPnl(
 // Build chart data
 const chartData = pnl.timeSeries?.map(point => ({
   date: new Date(point.timestamp),
-  pnl: point.cumulativePnl / 1_000_000 // Convert to dollars
+  pnl: Number(point.cumulativePnl) / 1_000_000 // Convert to dollars
 })) ?? [];
 ```
 
@@ -117,7 +118,7 @@ const marketPnl = await client.getUserPnl(
   { marketId: 'KXFEDDECISION-26JAN-T425' }
 );
 
-console.log(`Market P&L: $${(marketPnl.realizedPnl / 1_000_000).toFixed(2)}`);
+console.log(`Market P&L: $${uusdcToUsdc(marketPnl.realizedPnl)}`);
 ```
 
 **PNL for a date range:**
@@ -211,17 +212,19 @@ records.forEach(record => {
   
   switch (record.type) {
     case 'fill':
-      console.log(`${date}: ${record.action} ${record.quantity} ${record.side} @ $${record.priceUusdc / 1_000_000}`);
+      console.log(
+        `${date}: ${record.action} ${Number(record.ccontracts) / 100} ${record.side} @ $${Number(record.priceUusdc) / 1_000_000}`
+      );
       break;
     case 'settlement':
-      const won = record.payoutUusdc > 0;
-      console.log(`${date}: Settlement ${won ? 'WON' : 'LOST'} - $${record.payoutUusdc / 1_000_000}`);
+      const won = record.payoutUusdc !== '0';
+      console.log(`${date}: Settlement ${won ? 'WON' : 'LOST'} - $${Number(record.payoutUusdc) / 1_000_000}`);
       break;
     case 'deposit':
-      console.log(`${date}: Deposited $${record.amountUusdc / 1_000_000}`);
+      console.log(`${date}: Deposited $${Number(record.amountUusdc) / 1_000_000}`);
       break;
     case 'withdraw':
-      console.log(`${date}: Withdrew $${record.amountUusdc / 1_000_000} (${record.status})`);
+      console.log(`${date}: Withdrew $${Number(record.amountUusdc) / 1_000_000} (${record.status})`);
       break;
   }
 });
@@ -278,4 +281,3 @@ try {
 - Transaction history is sorted newest-first by default
 - Unrealized PNL is estimated based on position cost basis
 - Time series data points represent cumulative PNL at each interval
-

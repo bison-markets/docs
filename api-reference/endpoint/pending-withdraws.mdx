@@ -3,13 +3,14 @@ title: 'Pending Withdrawals'
 openapi: 'GET /pending-withdraws/{userAddress}'
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
 Get all pending withdrawals for a user, including their status and claimable amounts.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Path Parameters
 
@@ -31,16 +32,16 @@ Get all pending withdrawals for a user, including their status and claimable amo
       Chain the withdrawal is on (`base` or `bsc`).
     </ResponseField>
 
-    <ResponseField name="amountUusdc" type="number">
-      Original scheduled withdrawal amount in µUSDC.
+    <ResponseField name="amountUusdc" type="string">
+      Original scheduled withdrawal amount in µUSDC (integer string).
     </ResponseField>
 
-    <ResponseField name="claimedAmountUusdc" type="number">
-      Amount already claimed from this withdrawal in µUSDC.
+    <ResponseField name="claimedAmountUusdc" type="string">
+      Amount already claimed from this withdrawal in µUSDC (integer string).
     </ResponseField>
 
-    <ResponseField name="remainingUusdc" type="number">
-      Amount still available to claim in µUSDC.
+    <ResponseField name="remainingUusdc" type="string">
+      Amount still available to claim in µUSDC (integer string).
     </ResponseField>
 
     <ResponseField name="status" type="string">
@@ -61,20 +62,20 @@ Get all pending withdrawals for a user, including their status and claimable amo
   </Expandable>
 </ResponseField>
 
-<ResponseField name="totalPending" type="number">
-  Total amount in `pending` status in µUSDC.
+<ResponseField name="totalPending" type="string">
+  Total amount in `pending` status in µUSDC (integer string).
 </ResponseField>
 
-<ResponseField name="totalFillLocked" type="number">
-  Total amount in `fill-locked` status in µUSDC.
+<ResponseField name="totalFillLocked" type="string">
+  Total amount in `fill-locked` status in µUSDC (integer string).
 </ResponseField>
 
-<ResponseField name="totalUnclaimed" type="number">
-  Total amount in `unclaimed` status in µUSDC.
+<ResponseField name="totalUnclaimed" type="string">
+  Total amount in `unclaimed` status in µUSDC (integer string).
 </ResponseField>
 
-<ResponseField name="totalAvailableUnclaimed" type="number">
-  Total amount available to claim right now in µUSDC. Use this value to determine if the user can call `/get-withdraw-authorization`.
+<ResponseField name="totalAvailableUnclaimed" type="string">
+  Total amount available to claim right now in µUSDC (integer string). Use this value to determine if the user can call `/get-withdraw-authorization`.
 </ResponseField>
 
 ## Withdrawal Statuses
@@ -100,9 +101,9 @@ GET /pending-withdraws/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "chain": "base",
-      "amountUusdc": 50000000,
-      "claimedAmountUusdc": 0,
-      "remainingUusdc": 50000000,
+      "amountUusdc": "50000000",
+      "claimedAmountUusdc": "0",
+      "remainingUusdc": "50000000",
       "status": "unclaimed",
       "scheduledAt": "2024-11-09T15:30:00.000Z",
       "lockedAt": "2024-11-09T15:35:00.000Z",
@@ -111,19 +112,19 @@ GET /pending-withdraws/0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
     {
       "id": "661f9511-f30c-52e5-b827-557766551111",
       "chain": "base",
-      "amountUusdc": 25000000,
-      "claimedAmountUusdc": 0,
-      "remainingUusdc": 25000000,
+      "amountUusdc": "25000000",
+      "claimedAmountUusdc": "0",
+      "remainingUusdc": "25000000",
       "status": "pending",
       "scheduledAt": "2024-11-09T16:00:00.000Z",
       "lockedAt": null,
       "unclaimedAt": null
     }
   ],
-  "totalPending": 25000000,
-  "totalFillLocked": 0,
-  "totalUnclaimed": 50000000,
-  "totalAvailableUnclaimed": 50000000
+  "totalPending": "25000000",
+  "totalFillLocked": "0",
+  "totalUnclaimed": "50000000",
+  "totalAvailableUnclaimed": "50000000"
 }
 ```
 
@@ -135,5 +136,4 @@ Check this endpoint to:
 2. **Determine claimable amount**: Use `totalAvailableUnclaimed` to know how much can be claimed
 3. **Track partial claims**: View `claimedAmountUusdc` and `remainingUusdc` for partial claim tracking
 
-When `totalAvailableUnclaimed > 0`, the user can call `/get-withdraw-authorization` to get a claim signature.
-
+When `totalAvailableUnclaimed !== "0"`, the user can call `/get-withdraw-authorization` to get a claim signature.

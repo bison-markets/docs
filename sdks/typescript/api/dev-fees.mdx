@@ -3,7 +3,8 @@ title: "Developer Fees"
 description: "Checking and claiming accumulated dev account fees"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 import FeeStates from '/snippets/fee-states.mdx';
 
 ## Overview
@@ -16,7 +17,7 @@ The SDK provides methods for developers to manage their accounts, check fee bala
 - `getFeeClaimAuthorization` - Get an authorization signature to claim fees
 - `claimDevFees` - High-level method that handles authorization and transaction submission
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Configuration
 
@@ -49,9 +50,9 @@ async getDevAccountInfo(): Promise<{
   id: string;
   name: string;
   email: string;
-  grossFeeBps: number;
-  grossBaseFeeUusdc: number;
-  bisonFeeCutBps: number;
+  grossFeeBps: string;
+  grossBaseFeeUusdc: string;
+  bisonFeeCutBps: string;
   payoutChain: string;
   signerAddress: string;
   createdAt: string;
@@ -72,15 +73,15 @@ async getDevAccountInfo(): Promise<{
   Dev account email
 </ResponseField>
 
-<ResponseField name="grossFeeBps" type="number">
+<ResponseField name="grossFeeBps" type="string">
   Your fee rate in basis points (100 = 1%)
 </ResponseField>
 
-<ResponseField name="grossBaseFeeUusdc" type="number">
-  Flat fee per trade in µUSDC
+<ResponseField name="grossBaseFeeUusdc" type="string">
+  Flat fee per trade in µUSDC (integer string)
 </ResponseField>
 
-<ResponseField name="bisonFeeCutBps" type="number">
+<ResponseField name="bisonFeeCutBps" type="string">
   Bison's share of your gross fees in basis points
 </ResponseField>
 
@@ -102,9 +103,9 @@ async getDevAccountInfo(): Promise<{
 const info = await client.getDevAccountInfo();
 
 console.log('Dev Account:', info.name);
-console.log(`  Fee Rate: ${info.grossFeeBps / 100}%`);
-console.log(`  Base Fee: ${info.grossBaseFeeUusdc / 1_000_000} USDC per trade`);
-console.log(`  Bison Cut: ${info.bisonFeeCutBps / 100}% of gross fees`);
+console.log(`  Fee Rate: ${Number(info.grossFeeBps) / 100}%`);
+console.log(`  Base Fee: ${Number(info.grossBaseFeeUusdc) / 1_000_000} USDC per trade`);
+console.log(`  Bison Cut: ${Number(info.bisonFeeCutBps) / 100}% of gross fees`);
 console.log(`  Payout Chain: ${info.payoutChain}`);
 console.log(`  Signer: ${info.signerAddress}`);
 // Expected output:
@@ -126,9 +127,9 @@ Query your dev account's accumulated fees across different states.
 async getDevAccountFees(): Promise<{
   id: string;
   name: string;
-  pendingFeesUusdc: number;
-  lockedFeesUusdc: number;
-  unclaimedFeesUusdc: number;
+  pendingFeesUusdc: string;
+  lockedFeesUusdc: string;
+  unclaimedFeesUusdc: string;
   payoutChain: string;
   signerAddress: string;
 }>
@@ -146,16 +147,16 @@ This method automatically uses your configured `devFlags` for authentication.
   Dev account display name
 </ResponseField>
 
-<ResponseField name="pendingFeesUusdc" type="number">
-  Fees from trades that haven't been confirmed yet
+<ResponseField name="pendingFeesUusdc" type="string">
+  Fees from trades that haven't been confirmed yet (integer string)
 </ResponseField>
 
-<ResponseField name="lockedFeesUusdc" type="number">
-  Fees locked for payout (awaiting operator settlement)
+<ResponseField name="lockedFeesUusdc" type="string">
+  Fees locked for payout (awaiting operator settlement, integer string)
 </ResponseField>
 
-<ResponseField name="unclaimedFeesUusdc" type="number">
-  Fees available to claim via the vault contract
+<ResponseField name="unclaimedFeesUusdc" type="string">
+  Fees available to claim via the vault contract (integer string)
 </ResponseField>
 
 <ResponseField name="payoutChain" type="string">
@@ -182,9 +183,9 @@ const client = createBisonClient({
 const fees = await client.getDevAccountFees();
 
 console.log('Fee balances:');
-console.log(`  Pending: ${fees.pendingFeesUusdc / 1_000_000} USDC`);
-console.log(`  Locked: ${fees.lockedFeesUusdc / 1_000_000} USDC`);
-console.log(`  Claimable: ${fees.unclaimedFeesUusdc / 1_000_000} USDC`);
+console.log(`  Pending: ${Number(fees.pendingFeesUusdc) / 1_000_000} USDC`);
+console.log(`  Locked: ${Number(fees.lockedFeesUusdc) / 1_000_000} USDC`);
+console.log(`  Claimable: ${Number(fees.unclaimedFeesUusdc) / 1_000_000} USDC`);
 console.log(`  Payout chain: ${fees.payoutChain}`);
 // Expected output:
 // Fee balances:
@@ -208,7 +209,7 @@ async getDevFeeClaimHistory(params?: {
   claims: Array<{
     id: string;
     chain: string;
-    amountUusdc: number;
+    amountUusdc: string;
     payoutAddress: string;
     claimedAt: string;
   }>;
@@ -244,8 +245,8 @@ async getDevFeeClaimHistory(params?: {
   Chain where the claim was processed
 </ResponseField>
 
-<ResponseField name="claims[].amountUusdc" type="number">
-  Amount claimed in µUSDC
+<ResponseField name="claims[].amountUusdc" type="string">
+  Amount claimed in µUSDC (integer string)
 </ResponseField>
 
 <ResponseField name="claims[].payoutAddress" type="string">
@@ -275,7 +276,7 @@ const { claims, pagination } = await client.getDevFeeClaimHistory({ limit: 10 })
 
 console.log('Recent fee claims:');
 for (const claim of claims) {
-  const amount = claim.amountUusdc / 1_000_000;
+  const amount = Number(claim.amountUusdc) / 1_000_000;
   const date = new Date(claim.claimedAt).toLocaleDateString();
   console.log(`  ${date}: $${amount.toFixed(2)} on ${claim.chain}`);
 }
@@ -350,8 +351,8 @@ const publicClient = createPublicClient({
 // Check claimable balance first
 const fees = await client.getDevAccountFees();
 
-if (fees.unclaimedFeesUusdc > 0) {
-  console.log(`Claiming ${fees.unclaimedFeesUusdc / 1_000_000} USDC...`);
+if (fees.unclaimedFeesUusdc !== '0') {
+  console.log(`Claiming ${Number(fees.unclaimedFeesUusdc) / 1_000_000} USDC...`);
   
   const txHash = await client.claimDevFees({
     walletClient,
@@ -376,7 +377,7 @@ async getFeeClaimAuthorization(): Promise<{
   uuid: string;
   signature: string;
   expiresAt: number;
-  amount: number;
+  amount: string;
   chain: string;
   signerAddress: string;
 }>
@@ -394,7 +395,7 @@ import { VAULT_ABI } from '@bison-markets/sdk-ts';
 const auth = await client.getFeeClaimAuthorization();
 
 console.log('Fee claim authorization:');
-console.log(`  Amount: ${auth.amount / 1_000_000} USDC`);
+console.log(`  Amount: ${Number(auth.amount) / 1_000_000} USDC`);
 console.log(`  Chain: ${auth.chain}`);
 console.log(`  Expires at: ${new Date(auth.expiresAt * 1000).toISOString()}`);
 

@@ -3,7 +3,8 @@ title: "Deposits & Withdrawals"
 description: "Managing USDC deposits and withdrawals with the Bison SDK"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 import BigIntAmounts from '/snippets/bigint-amounts.mdx';
 
 ## Overview
@@ -16,7 +17,7 @@ The SDK provides deposit and withdrawal methods for managing USDC on Bison:
 
 These methods handle all the necessary steps including approvals and authorization signatures.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 <BigIntAmounts />
 
 ## Depositing USDC
@@ -31,7 +32,7 @@ async executeDepositFlow(params: {
   publicClient: PublicClient;
   userAddress: `0x${string}`;
   chain: 'base' | 'bsc';
-  amountUusdc: bigint;
+  amountUusdc: string;
 }): Promise<`0x${string}`>
 ```
 
@@ -53,8 +54,8 @@ async executeDepositFlow(params: {
   Chain identifier (`"base"` or `"bsc"`). Vault and USDC addresses are automatically resolved from the `/info` endpoint.
 </ParamField>
 
-<ParamField path="amountUusdc" type="bigint" required>
-  Amount in µUSDC (e.g., `100000000n` for 100 USDC). Use `usdcToUusdc()` helper for conversion.
+<ParamField path="amountUusdc" type="string" required>
+  Amount in µUSDC as an integer string (e.g., `"100000000"` for 100 USDC). Use `usdcToUusdc()` helper for conversion.
 </ParamField>
 
 #### Returns
@@ -88,7 +89,7 @@ const txHash = await client.executeDepositFlow({
   publicClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  amountUusdc: usdcToUusdc(100), // Helper converts 100 USDC to 100000000n µUSDC
+  amountUusdc: usdcToUusdc(100).toString(), // Helper converts 100 USDC to 100000000 µUSDC
 });
 
 console.log('Deposited! Transaction:', txHash);
@@ -113,7 +114,7 @@ async scheduleWithdraw(params: {
   walletClient: WalletClient;
   userAddress: `0x${string}`;
   chain: 'base' | 'bsc';
-  amountUusdc: bigint;
+  amountUusdc: string;
 }): Promise<{
   withdrawId: string;
   amountUusdc: string;
@@ -136,8 +137,8 @@ async scheduleWithdraw(params: {
   Chain identifier (`"base"` or `"bsc"`)
 </ParamField>
 
-<ParamField path="amountUusdc" type="bigint" required>
-  Amount in µUSDC (e.g., `50000000n` for 50 USDC). Must not exceed your deposited balance. Use `usdcToUusdc()` helper for conversion.
+<ParamField path="amountUusdc" type="string" required>
+  Amount in µUSDC as an integer string (e.g., `"50000000"` for 50 USDC). Must not exceed your deposited balance. Use `usdcToUusdc()` helper for conversion.
 </ParamField>
 
 #### Returns
@@ -154,7 +155,7 @@ const withdrawal = await client.scheduleWithdraw({
   walletClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  amountUusdc: usdcToUusdc(50), // 50 USDC
+  amountUusdc: usdcToUusdc(50).toString(), // 50 USDC
 });
 
 console.log('Withdrawal scheduled:', withdrawal.withdrawId);
@@ -266,7 +267,7 @@ const withdrawal = await client.scheduleWithdraw({
   walletClient,
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
   chain: 'base',
-  amountUusdc: usdcToUusdc(50), // 50 USDC
+  amountUusdc: usdcToUusdc(50).toString(), // 50 USDC
 });
 
 console.log('Withdrawal scheduled with ID:', withdrawal.withdrawId);
@@ -279,7 +280,7 @@ const pending = await client.getPendingWithdraws({
   userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
 });
 
-if (pending.totalAvailableUnclaimed > 0) {
+if (pending.totalAvailableUnclaimed !== '0') {
   // Claim all available withdrawals
   const txHash = await client.claimWithdraw({
     walletClient,
@@ -389,7 +390,7 @@ try {
     publicClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     chain: 'base',
-    amountUusdc: usdcToUusdc(1000), // 1000 USDC
+    amountUusdc: usdcToUusdc(1000).toString(), // 1000 USDC
   });
   console.log('Success:', txHash);
 } catch (error) {
@@ -422,7 +423,7 @@ try {
     walletClient,
     userAddress: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266',
     chain: 'base',
-    amountUusdc: usdcToUusdc(50),
+    amountUusdc: usdcToUusdc(50).toString(),
   });
   console.log('Scheduled:', withdrawal.withdrawId);
 } catch (error) {
@@ -487,8 +488,7 @@ try {
 ### General
 - All amounts in the API are in µUSDC (6 decimal places: 1 USDC = 1,000,000 µUSDC)
 - API responses return amounts as strings for precision
-- Use `usdcToUusdc()` to convert USDC to µUSDC (returns bigint)
+- Use `usdcToUusdc()` to convert USDC to µUSDC, then call `.toString()` for API inputs
 - Use `uusdcToUsdc()` to convert µUSDC to display format (returns string)
 - Vault and USDC addresses are automatically fetched from the `/info` endpoint and cached per client instance
 - Transaction confirmation can take 2-5 seconds on Base network
-

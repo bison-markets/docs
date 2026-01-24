@@ -19,7 +19,7 @@ async executeMintFlow(params: {
   chain: string;
   marketId: string;
   side: 'yes' | 'no';
-  number: number;
+  number: string;
 }): Promise<{ txHash: `0x${string}` }>
 ```
 
@@ -34,7 +34,7 @@ const result = await client.executeMintFlow({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'yes',
-  number: 20,
+  number: '20.00',
 });
 
 console.log('Tokens minted! Transaction:', result.txHash);
@@ -52,7 +52,7 @@ async executeBurnFlow(params: {
   chain: string;
   marketId: string;
   side: 'yes' | 'no';
-  number: number;
+  number: string;
 }): Promise<{ txHash: `0x${string}` }>
 ```
 
@@ -67,7 +67,7 @@ const result = await client.executeBurnFlow({
   chain: 'base',
   marketId: 'KXFEDDECISION-26JAN-T425',
   side: 'no',
-  number: 15,
+  number: '15.00',
 });
 
 console.log('Tokens burned! Transaction:', result.txHash);

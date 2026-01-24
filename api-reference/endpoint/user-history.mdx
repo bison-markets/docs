@@ -4,7 +4,8 @@ api: "GET /user/history"
 description: "Get unified transaction history including fills, settlements, deposits, and withdrawals"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -17,7 +18,7 @@ Returns a chronologically sorted list of all financial transactions for a user, 
 
 Results are sorted by timestamp (newest first) and support filtering and pagination.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 <ParamField query="userId" type="string" required>
   User's Ethereum wallet address (e.g., `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`)
@@ -62,10 +63,10 @@ Results are sorted by timestamp (newest first) and support filtering and paginat
     <ResponseField name="marketId" type="string">Market ticker</ResponseField>
     <ResponseField name="side" type="string">`"yes"` or `"no"`</ResponseField>
     <ResponseField name="action" type="string">`"buy"` or `"sell"`</ResponseField>
-    <ResponseField name="quantity" type="number">Number of contracts filled</ResponseField>
-    <ResponseField name="priceUusdc" type="number">Price per contract in µUSDC</ResponseField>
-    <ResponseField name="totalUusdc" type="number">Total value in µUSDC</ResponseField>
-    <ResponseField name="feeUusdc" type="number">Fee charged in µUSDC</ResponseField>
+    <ResponseField name="ccontracts" type="string">Number of cContracts filled (integer string)</ResponseField>
+    <ResponseField name="priceUusdc" type="string">Price per contract in µUSDC (integer string)</ResponseField>
+    <ResponseField name="totalUusdc" type="string">Total value in µUSDC (integer string)</ResponseField>
+    <ResponseField name="feeUusdc" type="string">Fee charged in µUSDC (integer string)</ResponseField>
     <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
   </Expandable>
   
@@ -74,8 +75,8 @@ Results are sorted by timestamp (newest first) and support filtering and paginat
     <ResponseField name="id" type="string">Unique settlement ID</ResponseField>
     <ResponseField name="marketId" type="string">Market ticker</ResponseField>
     <ResponseField name="side" type="string">`"yes"` or `"no"` - the side held</ResponseField>
-    <ResponseField name="quantity" type="number">Number of contracts settled</ResponseField>
-    <ResponseField name="payoutUusdc" type="number">Payout amount in µUSDC (0 if lost)</ResponseField>
+    <ResponseField name="ccontracts" type="string">Number of cContracts settled (integer string)</ResponseField>
+    <ResponseField name="payoutUusdc" type="string">Payout amount in µUSDC (integer string, 0 if lost)</ResponseField>
     <ResponseField name="result" type="string">`"yes"` or `"no"` - the market result</ResponseField>
     <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
   </Expandable>
@@ -85,7 +86,7 @@ Results are sorted by timestamp (newest first) and support filtering and paginat
     <ResponseField name="id" type="string">Unique deposit ID</ResponseField>
     <ResponseField name="chain" type="string">Chain name (e.g., `"base"`, `"bsc"`)</ResponseField>
     <ResponseField name="txHash" type="string">On-chain transaction hash</ResponseField>
-    <ResponseField name="amountUusdc" type="number">Deposit amount in µUSDC</ResponseField>
+    <ResponseField name="amountUusdc" type="string">Deposit amount in µUSDC (integer string)</ResponseField>
     <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
   </Expandable>
   
@@ -93,7 +94,7 @@ Results are sorted by timestamp (newest first) and support filtering and paginat
     <ResponseField name="type" type="string">`"withdraw"`</ResponseField>
     <ResponseField name="id" type="string">Unique withdrawal ID</ResponseField>
     <ResponseField name="chain" type="string">Chain name (e.g., `"base"`, `"bsc"`)</ResponseField>
-    <ResponseField name="amountUusdc" type="number">Withdrawal amount in µUSDC</ResponseField>
+    <ResponseField name="amountUusdc" type="string">Withdrawal amount in µUSDC (integer string)</ResponseField>
     <ResponseField name="status" type="string">`"pending"`, `"fill-locked"`, `"unclaimed"`, or `"claimed"`</ResponseField>
     <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds</ResponseField>
   </Expandable>
@@ -136,10 +137,10 @@ curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB882
       "marketId": "KXFEDDECISION-26JAN-T425",
       "side": "yes",
       "action": "buy",
-      "quantity": 10,
-      "priceUusdc": 650000,
-      "totalUusdc": 6500000,
-      "feeUusdc": 6500,
+      "ccontracts": "1000",
+      "priceUusdc": "650000",
+      "totalUusdc": "6500000",
+      "feeUusdc": "6500",
       "timestamp": 1734567890123
     },
     {
@@ -147,8 +148,8 @@ curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB882
       "id": "550e8400-e29b-41d4-a716-446655440002",
       "marketId": "KXFEDDECISION-26JAN-T400",
       "side": "yes",
-      "quantity": 5,
-      "payoutUusdc": 5000000,
+      "ccontracts": "500",
+      "payoutUusdc": "5000000",
       "result": "yes",
       "timestamp": 1734567800000
     },
@@ -157,7 +158,7 @@ curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB882
       "id": "550e8400-e29b-41d4-a716-446655440003",
       "chain": "base",
       "txHash": "0xabc123...",
-      "amountUusdc": 100000000,
+      "amountUusdc": "100000000",
       "timestamp": 1734567700000
     }
   ],
@@ -174,4 +175,3 @@ curl "https://api.bison.markets/user/history?userId=0xf39Fd6e51aad88F6F4ce6aB882
 }
 ```
 </ResponseExample>
-

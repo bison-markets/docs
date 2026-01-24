@@ -3,7 +3,12 @@ title: 'Get Orders'
 openapi: 'GET /kalshi/orders'
 ---
 
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
+
 ## Overview
+
+<QuantitiesExplanation />
 
 Retrieve orders for a user with flexible filtering and cursor-based pagination. This endpoint supports filtering by status, market, action, side, and date range, with server-side sorting and efficient pagination for large order histories.
 

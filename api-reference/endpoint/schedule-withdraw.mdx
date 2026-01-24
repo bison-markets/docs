@@ -3,7 +3,8 @@ title: 'Schedule Withdraw'
 openapi: 'POST /schedule-withdraw'
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -11,7 +12,7 @@ Schedule a USDC withdrawal request. This is step 1 of the two-phase withdrawal p
 
 Scheduling requires only a signature (no gas). The withdrawal will be processed and become claimable after system batching.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Withdrawal Flow
 
@@ -30,8 +31,8 @@ Bison uses a two-phase withdrawal process:
   User's Ethereum wallet address.
 </ParamField>
 
-<ParamField path="amountUusdc" type="number" required>
-  Amount to withdraw in µUSDC. Must be positive and not exceed deposited balance.
+<ParamField path="amountUusdc" type="string" required>
+  Amount to withdraw in µUSDC as an integer string. Must be positive and not exceed deposited balance.
 </ParamField>
 
 <ParamField path="signature" type="string" required>
@@ -48,8 +49,8 @@ Bison uses a two-phase withdrawal process:
   Unique identifier for the scheduled withdrawal.
 </ResponseField>
 
-<ResponseField name="amountUusdc" type="number">
-  Amount scheduled for withdrawal in µUSDC.
+<ResponseField name="amountUusdc" type="string">
+  Amount scheduled for withdrawal in µUSDC (integer string).
 </ResponseField>
 
 <ResponseField name="status" type="string">
@@ -157,4 +158,3 @@ const message = {
 - Multiple withdrawals can be scheduled and will be batched when claiming
 - Signature expires after the specified `expiry` timestamp
 - Use `/pending-withdraws/{userAddress}` to check withdrawal status
-

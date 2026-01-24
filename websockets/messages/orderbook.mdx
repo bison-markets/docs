@@ -3,13 +3,14 @@ title: "Orderbook Data"
 description: "Real-time orderbook snapshots and deltas for a specific market"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
 Connect to receive real-time orderbook data for a specific market, including initial snapshots and incremental updates.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Connection
 
@@ -31,8 +32,8 @@ const ws = new WebSocket(
 
 // Track orderbook state
 let orderbook = {
-  yes: new Map(), // price_uusdc -> quantity
-  no: new Map()   // price_uusdc -> quantity
+  yes: new Map(), // price_uusdc -> ccontracts (bigint)
+  no: new Map()   // price_uusdc -> ccontracts (bigint)
 };
 
 ws.onopen = () => {
@@ -63,13 +64,13 @@ function handleSnapshot(snapshot) {
   
   if (snapshot.yes) {
     snapshot.yes.forEach(level => {
-      orderbook.yes.set(level.price_uusdc, level.quantity);
+      orderbook.yes.set(level.price_uusdc, BigInt(level.ccontracts));
     });
   }
   
   if (snapshot.no) {
     snapshot.no.forEach(level => {
-      orderbook.no.set(level.price_uusdc, level.quantity);
+      orderbook.no.set(level.price_uusdc, BigInt(level.ccontracts));
     });
   }
   
@@ -79,16 +80,16 @@ function handleSnapshot(snapshot) {
 function handleDelta(delta) {
   // Apply incremental update
   const book = delta.side === "yes" ? orderbook.yes : orderbook.no;
-  const currentQty = book.get(delta.price_uusdc) || 0;
-  const newQty = currentQty + delta.delta;
+  const currentCcontracts = book.get(delta.price_uusdc) || 0n;
+  const newCcontracts = currentCcontracts + BigInt(delta.delta);
   
-  if (newQty <= 0) {
+  if (newCcontracts <= 0n) {
     book.delete(delta.price_uusdc);
   } else {
-    book.set(delta.price_uusdc, newQty);
+    book.set(delta.price_uusdc, newCcontracts);
   }
   
-  console.log(`Orderbook updated: ${delta.side} @ ${delta.price_uusdc}: ${newQty}`);
+  console.log(`Orderbook updated: ${delta.side} @ ${delta.price_uusdc}: ${newCcontracts.toString()}`);
 }
 ```
 
@@ -105,14 +106,14 @@ Sent immediately upon connection, providing the complete current orderbook state
   "type": "orderbook_snapshot",
   "market_ticker": "KXBTC-100K-DEC31",
   "yes": [
-    { "price_uusdc": 750000, "quantity": 100 },
-    { "price_uusdc": 740000, "quantity": 250 },
-    { "price_uusdc": 730000, "quantity": 500 }
+    { "price_uusdc": "750000", "ccontracts": "100" },
+    { "price_uusdc": "740000", "ccontracts": "250" },
+    { "price_uusdc": "730000", "ccontracts": "500" }
   ],
   "no": [
-    { "price_uusdc": 260000, "quantity": 150 },
-    { "price_uusdc": 270000, "quantity": 300 },
-    { "price_uusdc": 280000, "quantity": 400 }
+    { "price_uusdc": "260000", "ccontracts": "150" },
+    { "price_uusdc": "270000", "ccontracts": "300" },
+    { "price_uusdc": "280000", "ccontracts": "400" }
   ]
 }
 ```
@@ -129,11 +130,11 @@ Sent immediately upon connection, providing the complete current orderbook state
   Array of YES side price levels, ordered by price
   
   <Expandable title="Level Object">
-    <ResponseField name="price_uusdc" type="number">
-      Price level in µUSDC
+    <ResponseField name="price_uusdc" type="string">
+      Price level in µUSDC (integer string)
     </ResponseField>
-    <ResponseField name="quantity" type="number">
-      Total quantity available at this price
+    <ResponseField name="ccontracts" type="string">
+      Total ccontracts available at this price (integer string; 1 contract = 100 ccontracts)
     </ResponseField>
   </Expandable>
 </ResponseField>
@@ -153,8 +154,8 @@ Sent for each orderbook change, providing an incremental update.
   "type": "orderbook_delta",
   "market_ticker": "KXBTC-100K-DEC31",
   "side": "yes",
-  "price_uusdc": 750000,
-  "delta": 50
+  "price_uusdc": "750000",
+  "delta": "50"
 }
 ```
 
@@ -170,12 +171,12 @@ Sent for each orderbook change, providing an incremental update.
   Either `"yes"` or `"no"`
 </ResponseField>
 
-<ResponseField name="price_uusdc" type="number">
-  Price level being updated
+<ResponseField name="price_uusdc" type="string">
+  Price level being updated (µUSDC integer string)
 </ResponseField>
 
-<ResponseField name="delta" type="number">
-  Change in quantity (positive for additions, negative for removals)
+<ResponseField name="delta" type="string">
+  Change in ccontracts (integer string; positive for additions, negative for removals)
 </ResponseField>
 
 ## Maintaining Accurate State
@@ -183,8 +184,8 @@ Sent for each orderbook change, providing an incremental update.
 <Note>
 To maintain an accurate orderbook:
 1. Initialize with the snapshot on connection
-2. Apply each delta by adding it to the current quantity at that price level
-3. Remove price levels when their quantity reaches zero or below
+2. Apply each delta by adding it to the current ccontracts at that price level
+3. Remove price levels when their ccontracts reaches zero or below
 </Note>
 
 ## Example: Orderbook Display
@@ -229,13 +230,13 @@ class OrderbookManager {
     
     if (snapshot.yes) {
       snapshot.yes.forEach(level => {
-        this.orderbook.yes.set(level.price_uusdc, level.quantity);
+        this.orderbook.yes.set(level.price_uusdc, BigInt(level.ccontracts));
       });
     }
     
     if (snapshot.no) {
       snapshot.no.forEach(level => {
-        this.orderbook.no.set(level.price_uusdc, level.quantity);
+        this.orderbook.no.set(level.price_uusdc, BigInt(level.ccontracts));
       });
     }
     
@@ -244,13 +245,13 @@ class OrderbookManager {
   
   applyDelta(delta) {
     const book = delta.side === "yes" ? this.orderbook.yes : this.orderbook.no;
-    const currentQty = book.get(delta.price_uusdc) || 0;
-    const newQty = currentQty + delta.delta;
+    const currentCcontracts = book.get(delta.price_uusdc) || 0n;
+    const newCcontracts = currentCcontracts + BigInt(delta.delta);
     
-    if (newQty <= 0) {
+    if (newCcontracts <= 0n) {
       book.delete(delta.price_uusdc);
     } else {
-      book.set(delta.price_uusdc, newQty);
+      book.set(delta.price_uusdc, newCcontracts);
     }
     
     this.render();
@@ -261,26 +262,26 @@ class OrderbookManager {
     
     // YES side (sorted descending by price)
     console.log("\nYES:");
-    const yesPrices = Array.from(this.orderbook.yes.keys()).sort((a, b) => b - a);
+    const yesPrices = Array.from(this.orderbook.yes.keys()).sort((a, b) => Number(b) - Number(a));
     yesPrices.forEach(price => {
-      const qty = this.orderbook.yes.get(price);
-      const priceUSDC = (price / 1_000_000).toFixed(2);
-      console.log(`  ${priceUSDC}: ${qty} contracts`);
+      const ccontracts = this.orderbook.yes.get(price) || 0n;
+      const priceUSDC = (Number(price) / 1_000_000).toFixed(2);
+      console.log(`  ${priceUSDC}: ${ccontracts.toString()} ccontracts`);
     });
     
     // NO side (sorted descending by price)
     console.log("\nNO:");
-    const noPrices = Array.from(this.orderbook.no.keys()).sort((a, b) => b - a);
+    const noPrices = Array.from(this.orderbook.no.keys()).sort((a, b) => Number(b) - Number(a));
     noPrices.forEach(price => {
-      const qty = this.orderbook.no.get(price);
-      const priceUSDC = (price / 1_000_000).toFixed(2);
-      console.log(`  ${priceUSDC}: ${qty} contracts`);
+      const ccontracts = this.orderbook.no.get(price) || 0n;
+      const priceUSDC = (Number(price) / 1_000_000).toFixed(2);
+      console.log(`  ${priceUSDC}: ${ccontracts.toString()} ccontracts`);
     });
   }
   
   getBestBidAsk() {
-    const yesPrices = Array.from(this.orderbook.yes.keys());
-    const noPrices = Array.from(this.orderbook.no.keys());
+    const yesPrices = Array.from(this.orderbook.yes.keys()).map(Number);
+    const noPrices = Array.from(this.orderbook.no.keys()).map(Number);
     
     return {
       yesBid: yesPrices.length > 0 ? Math.max(...yesPrices) : null,
@@ -335,11 +336,11 @@ console.log(`Best NO: ${noBid} / ${noAsk}`);
   </Step>
   
   <Step title="Apply Deltas Incrementally">
-    Add delta values to existing quantities rather than replacing them.
+    Add delta values to existing ccontracts rather than replacing them.
   </Step>
   
-  <Step title="Clean Up Zero Quantities">
-    Remove price levels from your orderbook when their quantity reaches zero or below.
+  <Step title="Clean Up Zero Ccontracts">
+    Remove price levels from your orderbook when their ccontracts reach zero or below.
   </Step>
   
   <Step title="Sort Price Levels">
@@ -350,4 +351,3 @@ console.log(`Best NO: ${noBid} / ${noAsk}`);
     On reconnection, the snapshot will reset your state automatically.
   </Step>
 </Steps>
-

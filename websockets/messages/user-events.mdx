@@ -3,13 +3,14 @@ title: "User Events"
 description: "Real-time updates about your orders, positions, and balances"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
 Connect to receive real-time updates about your trading activity, including order status changes, position updates, and balance changes.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Connection
 
@@ -78,8 +79,8 @@ The User Events WebSocket streams the following event types:
     "marketId": "KXBTC-100K-DEC31",
     "action": "buy",
     "side": "yes",
-    "number": 10,
-    "priceUusdc": 750000
+    "ccontracts": "1000",
+    "priceUusdc": "750000"
   }
   ```
 
@@ -98,10 +99,10 @@ The User Events WebSocket streams the following event types:
   <ResponseField name="side" type="string">
     Either `"yes"` or `"no"`
   </ResponseField>
-  <ResponseField name="number" type="number">
-    Number of contracts
+  <ResponseField name="ccontracts" type="string">
+    Number of cContracts (integer string)
   </ResponseField>
-  <ResponseField name="priceUusdc" type="number">
+  <ResponseField name="priceUusdc" type="string">
     Price per contract in µUSDC (microUSDC, 6 decimals)
   </ResponseField>
 </Accordion>
@@ -116,8 +117,8 @@ The User Events WebSocket streams the following event types:
     "marketId": "KXBTC-100K-DEC31",
     "action": "buy",
     "side": "yes",
-    "number": 10,
-    "priceUusdc": 750000
+    "ccontracts": "1000",
+    "priceUusdc": "750000"
   }
   ```
 
@@ -134,8 +135,8 @@ The User Events WebSocket streams the following event types:
     "marketId": "KXBTC-100K-DEC31",
     "action": "buy",
     "side": "yes",
-    "number": 10,
-    "priceUusdc": 750000
+    "ccontracts": "1000",
+    "priceUusdc": "750000"
   }
   ```
 
@@ -206,8 +207,8 @@ The User Events WebSocket streams the following event types:
   {
     "type": "usdc_deposited",
     "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "uusdcAmount": 1000000,
-    "newBalanceUusdc": 5000000
+    "uusdcAmount": "1000000",
+    "newBalanceUusdc": "5000000"
   }
   ```
 
@@ -217,10 +218,10 @@ The User Events WebSocket streams the following event types:
   <ResponseField name="userAddress" type="string">
     Your Ethereum address
   </ResponseField>
-  <ResponseField name="uusdcAmount" type="number">
+  <ResponseField name="uusdcAmount" type="string">
     Amount deposited in µUSDC (1 USDC = 1,000,000 µUSDC)
   </ResponseField>
-  <ResponseField name="newBalanceUusdc" type="number">
+  <ResponseField name="newBalanceUusdc" type="string">
     Your new total balance in µUSDC
   </ResponseField>
 </Accordion>
@@ -232,8 +233,8 @@ The User Events WebSocket streams the following event types:
   {
     "type": "usdc_withdrawn",
     "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "uusdcAmount": 500000,
-    "newBalanceUusdc": 4500000
+    "uusdcAmount": "500000",
+    "newBalanceUusdc": "4500000"
   }
   ```
 
@@ -251,7 +252,7 @@ The User Events WebSocket streams the following event types:
     "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "marketId": "KXBTC-100K-DEC31",
     "side": "yes",
-    "number": 10
+    "ccontracts": "1000"
   }
   ```
 
@@ -267,8 +268,8 @@ The User Events WebSocket streams the following event types:
   <ResponseField name="side" type="string">
     Position side: `"yes"` or `"no"`
   </ResponseField>
-  <ResponseField name="number" type="number">
-    Number of position tokens minted
+  <ResponseField name="ccontracts" type="string">
+    Number of position tokens minted (integer string)
   </ResponseField>
 </Accordion>
 
@@ -281,10 +282,9 @@ The User Events WebSocket streams the following event types:
     "userAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     "marketId": "KXBTC-100K-DEC31",
     "side": "yes",
-    "number": 5
+    "ccontracts": "500"
   }
   ```
 
   Fields are the same as `position_minted`.
 </Accordion>
-

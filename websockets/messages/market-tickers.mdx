@@ -3,7 +3,8 @@ title: "Market Tickers"
 description: "Stream live market data for all markets in an event"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -58,11 +59,11 @@ Ticker updates contain the latest market data:
 ```json
 {
   "market_ticker": "KXBTC-100K-DEC31",
-  "yes_bid_uusdc": 720000,
-  "yes_ask_uusdc": 750000,
-  "no_bid_uusdc": 250000,
-  "no_ask_uusdc": 280000,
-  "last_price_uusdc": 735000,
+  "yes_bid_uusdc": "720000",
+  "yes_ask_uusdc": "750000",
+  "no_bid_uusdc": "250000",
+  "no_ask_uusdc": "280000",
+  "last_price_uusdc": "735000",
   "volume": 15000,
   "open_interest": 50000
 }
@@ -74,24 +75,24 @@ Ticker updates contain the latest market data:
   Market ticker being updated
 </ResponseField>
 
-<ResponseField name="yes_bid_uusdc" type="number" optional>
-  Best bid price for YES in µUSDC
+<ResponseField name="yes_bid_uusdc" type="string" optional>
+  Best bid price for YES in µUSDC (integer string)
 </ResponseField>
 
-<ResponseField name="yes_ask_uusdc" type="number" optional>
-  Best ask price for YES in µUSDC
+<ResponseField name="yes_ask_uusdc" type="string" optional>
+  Best ask price for YES in µUSDC (integer string)
 </ResponseField>
 
-<ResponseField name="no_bid_uusdc" type="number" optional>
-  Best bid price for NO in µUSDC
+<ResponseField name="no_bid_uusdc" type="string" optional>
+  Best bid price for NO in µUSDC (integer string)
 </ResponseField>
 
-<ResponseField name="no_ask_uusdc" type="number" optional>
-  Best ask price for NO in µUSDC
+<ResponseField name="no_ask_uusdc" type="string" optional>
+  Best ask price for NO in µUSDC (integer string)
 </ResponseField>
 
-<ResponseField name="last_price_uusdc" type="number" optional>
-  Last traded price in µUSDC
+<ResponseField name="last_price_uusdc" type="string" optional>
+  Last traded price in µUSDC (integer string)
 </ResponseField>
 
 <ResponseField name="volume" type="number" optional>
@@ -102,7 +103,7 @@ Ticker updates contain the latest market data:
   Current open interest (outstanding contracts)
 </ResponseField>
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## Example: Building a Price Display
 
@@ -124,11 +125,11 @@ ws.onmessage = (event) => {
   
   // Update market data
   markets.set(data.market_ticker, {
-    yesBid: data.yes_bid_uusdc / 1_000_000,
-    yesAsk: data.yes_ask_uusdc / 1_000_000,
-    noBid: data.no_bid_uusdc / 1_000_000,
-    noAsk: data.no_ask_uusdc / 1_000_000,
-    lastPrice: data.last_price_uusdc / 1_000_000,
+    yesBid: data.yes_bid_uusdc ? Number(data.yes_bid_uusdc) / 1_000_000 : null,
+    yesAsk: data.yes_ask_uusdc ? Number(data.yes_ask_uusdc) / 1_000_000 : null,
+    noBid: data.no_bid_uusdc ? Number(data.no_bid_uusdc) / 1_000_000 : null,
+    noAsk: data.no_ask_uusdc ? Number(data.no_ask_uusdc) / 1_000_000 : null,
+    lastPrice: data.last_price_uusdc ? Number(data.last_price_uusdc) / 1_000_000 : null,
     volume: data.volume,
     openInterest: data.open_interest,
   });
@@ -164,4 +165,3 @@ function renderMarketData(ticker, data) {
     Track volume and liquidity changes in real-time
   </Card>
 </CardGroup>
-

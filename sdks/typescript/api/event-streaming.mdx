@@ -3,7 +3,8 @@ title: "Event Streaming"
 description: "Real-time event streaming with WebSockets"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -15,7 +16,7 @@ The SDK provides three WebSocket-based event streaming methods:
 
 All methods support automatic reconnection with exponential backoff.
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## User Events
 
@@ -91,7 +92,7 @@ The callback receives one of the following event types:
 #### Example
 
 ```typescript
-import { createBisonClient } from '@bison-markets/sdk-ts';
+import { createBisonClient, ccontractsToContracts, uusdcToUsdc } from '@bison-markets/sdk-ts';
 
 const client = createBisonClient({ 
   baseUrl: 'https://api.bison.markets' 
@@ -106,8 +107,8 @@ const disconnect = client.listen(
           market: event.marketId,
           action: event.action,
           side: event.side,
-          quantity: event.number,
-          price: event.priceUusdc / 1_000_000,
+          contracts: ccontractsToContracts(event.ccontracts, 2),
+          price: Number(event.priceUusdc) / 1_000_000,
         });
         break;
       
@@ -116,12 +117,13 @@ const disconnect = client.listen(
         break;
       
       case 'usdc_deposited':
-        const usdcAmount = event.uusdcAmount / 1_000_000;
-        console.log(`Deposited ${usdcAmount} USDC`);
+        console.log(`Deposited ${uusdcToUsdc(event.uusdcAmount)} USDC`);
         break;
       
       case 'position_minted':
-        console.log(`Withdrew ${event.number} ${event.side} tokens for ${event.marketId} to wallet`);
+        console.log(
+          `Withdrew ${ccontractsToContracts(event.ccontracts, 2)} ${event.side} tokens for ${event.marketId} to wallet`
+        );
         break;
       
       case 'market_settled':
@@ -199,24 +201,24 @@ A disconnect function to stop listening and close the WebSocket connection.
   Market ticker identifier
 </ParamField>
 
-<ParamField path="yes_bid_uusdc" type="number">
-  Current best bid price for YES side in µUSDC
+<ParamField path="yes_bid_uusdc" type="string">
+  Current best bid price for YES side in µUSDC (integer string)
 </ParamField>
 
-<ParamField path="yes_ask_uusdc" type="number">
-  Current best ask price for YES side in µUSDC
+<ParamField path="yes_ask_uusdc" type="string">
+  Current best ask price for YES side in µUSDC (integer string)
 </ParamField>
 
-<ParamField path="no_bid_uusdc" type="number">
-  Current best bid price for NO side in µUSDC
+<ParamField path="no_bid_uusdc" type="string">
+  Current best bid price for NO side in µUSDC (integer string)
 </ParamField>
 
-<ParamField path="no_ask_uusdc" type="number">
-  Current best ask price for NO side in µUSDC
+<ParamField path="no_ask_uusdc" type="string">
+  Current best ask price for NO side in µUSDC (integer string)
 </ParamField>
 
-<ParamField path="last_price_uusdc" type="number">
-  Last traded price in µUSDC
+<ParamField path="last_price_uusdc" type="string">
+  Last traded price in µUSDC (integer string)
 </ParamField>
 
 <ParamField path="volume" type="number">
@@ -236,19 +238,19 @@ const disconnect = client.listenToKalshiEvent(
     console.log(`Market: ${update.market_ticker}`);
     
     if (update.yes_bid_uusdc && update.yes_ask_uusdc) {
-      const yesBid = update.yes_bid_uusdc / 1_000_000;
-      const yesAsk = update.yes_ask_uusdc / 1_000_000;
+      const yesBid = Number(update.yes_bid_uusdc) / 1_000_000;
+      const yesAsk = Number(update.yes_ask_uusdc) / 1_000_000;
       console.log(`YES: $${yesBid} bid / $${yesAsk} ask`);
     }
     
     if (update.no_bid_uusdc && update.no_ask_uusdc) {
-      const noBid = update.no_bid_uusdc / 1_000_000;
-      const noAsk = update.no_ask_uusdc / 1_000_000;
+      const noBid = Number(update.no_bid_uusdc) / 1_000_000;
+      const noAsk = Number(update.no_ask_uusdc) / 1_000_000;
       console.log(`NO: $${noBid} bid / $${noAsk} ask`);
     }
     
     if (update.last_price_uusdc) {
-      console.log(`Last: $${update.last_price_uusdc / 1_000_000}`);
+      console.log(`Last: $${Number(update.last_price_uusdc) / 1_000_000}`);
     }
     
     if (update.volume !== undefined) {
@@ -343,8 +345,8 @@ const client = createBisonClient({
 
 // Track orderbook state
 const orderbook = {
-  yes: new Map<number, number>(),  // price -> quantity
-  no: new Map<number, number>()     // price -> quantity
+  yes: new Map<string, bigint>(),  // price_uusdc -> ccontracts
+  no: new Map<string, bigint>()     // price_uusdc -> ccontracts
 };
 
 const disconnect = client.listenToOrderbook(
@@ -356,11 +358,11 @@ const disconnect = client.listenToOrderbook(
       orderbook.no.clear();
       
       update.yes?.forEach(level => {
-        orderbook.yes.set(level.price_uusdc, level.quantity);
+        orderbook.yes.set(level.price_uusdc, BigInt(level.ccontracts));
       });
       
       update.no?.forEach(level => {
-        orderbook.no.set(level.price_uusdc, level.quantity);
+        orderbook.no.set(level.price_uusdc, BigInt(level.ccontracts));
       });
       
       console.log('Orderbook initialized');
@@ -370,17 +372,17 @@ const disconnect = client.listenToOrderbook(
     } else if (update.type === 'orderbook_delta') {
       // Apply incremental update
       const book = update.side === 'yes' ? orderbook.yes : orderbook.no;
-      const currentQty = book.get(update.price_uusdc) || 0;
-      const newQty = currentQty + update.delta;
+      const currentCcontracts = book.get(update.price_uusdc) || 0n;
+      const newCcontracts = currentCcontracts + BigInt(update.delta);
       
-      if (newQty <= 0) {
+      if (newCcontracts <= 0n) {
         book.delete(update.price_uusdc);
       } else {
-        book.set(update.price_uusdc, newQty);
+        book.set(update.price_uusdc, newCcontracts);
       }
       
-      const priceUSDC = (update.price_uusdc / 1_000_000).toFixed(2);
-      console.log(`${update.side.toUpperCase()} @ $${priceUSDC}: ${newQty} contracts`);
+      const priceUSDC = (Number(update.price_uusdc) / 1_000_000).toFixed(2);
+      console.log(`${update.side.toUpperCase()} @ $${priceUSDC}: ${newCcontracts.toString()} ccontracts`);
     }
   },
   {
@@ -478,5 +480,4 @@ const disconnect = client.listen(
 - Reconnection is enabled by default but can be disabled by setting `reconnect: false`
 - Always call the disconnect function to avoid memory leaks when cleaning up
 - For orderbook subscriptions, always process the initial snapshot before applying deltas
-- Orderbook delta updates are cumulative - add them to existing quantities, don't replace
-
+- Orderbook delta updates are cumulative - add them to existing ccontracts, don't replace

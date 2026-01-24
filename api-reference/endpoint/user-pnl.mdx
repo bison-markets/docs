@@ -4,7 +4,8 @@ api: "GET /user/pnl"
 description: "Calculate profit and loss for a user's trading activity"
 ---
 
-import UusdcExplanation from '/snippets/uusdc-explanation.mdx';
+import QuantitiesExplanation from '/snippets/quantities-explanation.mdx';
+
 
 ## Overview
 
@@ -16,7 +17,7 @@ Returns a comprehensive PNL (Profit and Loss) summary for a user, including:
 - **Total Fees** - All trading fees paid
 - **Time Series** - Optional PNL over time
 
-<UusdcExplanation />
+<QuantitiesExplanation />
 
 ## PNL Calculation
 
@@ -53,28 +54,28 @@ Realized PNL = Sell Revenue + Settlement Payouts - Buy Costs - Fees
 
 ## Response
 
-<ResponseField name="totalDeposits" type="number" required>
-  Total USDC deposited in µUSDC. Excluded when filtering by `marketId`.
+<ResponseField name="totalDeposits" type="string" required>
+  Total USDC deposited in µUSDC (integer string). Excluded when filtering by `marketId`.
 </ResponseField>
 
-<ResponseField name="totalWithdrawals" type="number" required>
-  Total USDC withdrawn (claimed) in µUSDC. Excluded when filtering by `marketId`.
+<ResponseField name="totalWithdrawals" type="string" required>
+  Total USDC withdrawn (claimed) in µUSDC (integer string). Excluded when filtering by `marketId`.
 </ResponseField>
 
-<ResponseField name="realizedPnl" type="number" required>
-  Realized profit/loss in µUSDC. Positive = profit, negative = loss.
+<ResponseField name="realizedPnl" type="string" required>
+  Realized profit/loss in µUSDC (integer string). Positive = profit, negative = loss.
 </ResponseField>
 
-<ResponseField name="unrealizedPnl" type="number" required>
-  Estimated unrealized profit/loss in µUSDC based on open positions.
+<ResponseField name="unrealizedPnl" type="string" required>
+  Estimated unrealized profit/loss in µUSDC based on open positions (integer string).
 </ResponseField>
 
-<ResponseField name="netPnl" type="number" required>
-  Total PNL (realized + unrealized) in µUSDC.
+<ResponseField name="netPnl" type="string" required>
+  Total PNL (realized + unrealized) in µUSDC (integer string).
 </ResponseField>
 
-<ResponseField name="totalFeesPaid" type="number" required>
-  Total trading fees paid in µUSDC.
+<ResponseField name="totalFeesPaid" type="string" required>
+  Total trading fees paid in µUSDC (integer string).
 </ResponseField>
 
 <ResponseField name="timeSeries" type="array">
@@ -82,7 +83,7 @@ Realized PNL = Sell Revenue + Settlement Payouts - Buy Costs - Fees
   
   <Expandable>
     <ResponseField name="timestamp" type="number">Unix timestamp in milliseconds (start of the time bucket)</ResponseField>
-    <ResponseField name="cumulativePnl" type="number">Cumulative PNL at this point in µUSDC</ResponseField>
+    <ResponseField name="cumulativePnl" type="string">Cumulative PNL at this point in µUSDC (integer string)</ResponseField>
   </Expandable>
 </ResponseField>
 
@@ -107,35 +108,35 @@ curl "https://api.bison.markets/user/pnl?userId=0xf39Fd6e51aad88F6F4ce6aB8827279
 <ResponseExample>
 ```json 200 Basic
 {
-  "totalDeposits": 500000000,
-  "totalWithdrawals": 100000000,
-  "realizedPnl": 25000000,
-  "unrealizedPnl": 5000000,
-  "netPnl": 30000000,
-  "totalFeesPaid": 150000
+  "totalDeposits": "500000000",
+  "totalWithdrawals": "100000000",
+  "realizedPnl": "25000000",
+  "unrealizedPnl": "5000000",
+  "netPnl": "30000000",
+  "totalFeesPaid": "150000"
 }
 ```
 
 ```json 200 With Time Series
 {
-  "totalDeposits": 500000000,
-  "totalWithdrawals": 100000000,
-  "realizedPnl": 25000000,
-  "unrealizedPnl": 5000000,
-  "netPnl": 30000000,
-  "totalFeesPaid": 150000,
+  "totalDeposits": "500000000",
+  "totalWithdrawals": "100000000",
+  "realizedPnl": "25000000",
+  "unrealizedPnl": "5000000",
+  "netPnl": "30000000",
+  "totalFeesPaid": "150000",
   "timeSeries": [
     {
       "timestamp": 1733011200000,
-      "cumulativePnl": -5000000
+      "cumulativePnl": "-5000000"
     },
     {
       "timestamp": 1733097600000,
-      "cumulativePnl": 10000000
+      "cumulativePnl": "10000000"
     },
     {
       "timestamp": 1733184000000,
-      "cumulativePnl": 25000000
+      "cumulativePnl": "25000000"
     }
   ]
 }
@@ -157,8 +158,8 @@ Display overall trading performance:
 ```typescript
 const pnl = await fetch('/user/pnl?userId=0x...').then(r => r.json());
 
-console.log(`Net P&L: $${(pnl.netPnl / 1_000_000).toFixed(2)}`);
-console.log(`Fees Paid: $${(pnl.totalFeesPaid / 1_000_000).toFixed(2)}`);
+console.log(`Net P&L: $${Number(pnl.netPnl) / 1_000_000}`);
+console.log(`Fees Paid: $${Number(pnl.totalFeesPaid) / 1_000_000}`);
 ```
 
 ### Performance Chart
@@ -171,7 +172,7 @@ const pnl = await fetch('/user/pnl?userId=0x...&granularity=day').then(r => r.js
 // pnl.timeSeries contains daily cumulative PNL points
 const chartData = pnl.timeSeries.map(point => ({
   date: new Date(point.timestamp),
-  pnl: point.cumulativePnl / 1_000_000
+  pnl: Number(point.cumulativePnl) / 1_000_000
 }));
 ```
 
@@ -184,6 +185,5 @@ const marketPnl = await fetch(
   '/user/pnl?userId=0x...&marketId=KXFEDDECISION-26JAN-T425'
 ).then(r => r.json());
 
-console.log(`Market P&L: $${(marketPnl.realizedPnl / 1_000_000).toFixed(2)}`);
+console.log(`Market P&L: $${Number(marketPnl.realizedPnl) / 1_000_000}`);
 ```
-
